@@ -2,7 +2,10 @@
 
 **Rule:** all stages build on this one project. Never remove working features. Test before moving on.
 
-## Status: STAGE 1 – code complete and tested locally; APK build NOT yet run
+## Status: STAGE 1 – code complete; debug APK BUILT by GitHub Actions (build-2); not yet installed/tested on a device
+
+Repo: github.com/ItzUnik1/Govern (Claude has push access via the Claude GitHub app). APK: Releases → build-2 → GOVERN-v0.1.0-build2-debug.apk (4.2 MB, bundle verified inside the APK).
+CI lessons: `android-actions/setup-android` fails (package 'tools' gone) → use the runner's preinstalled SDK + `sdkmanager --licenses`. Job logs are readable via the public GitHub API.
 
 ### Done (Stage 1)
 - React + TypeScript + Vite mobile-first UI; Capacitor 8 Android project in `android/` (portrait, back button handled)
@@ -19,8 +22,8 @@
 - Browser E2E (`scripts/e2e.cjs`, Playwright, 390×800): title → select → play 60 months with events/election → save/reload/load/delete; zero console errors
 
 ### NOT verified (be honest)
-- The APK has **not** been built or installed (sandbox cannot reach Google/Gradle servers). First real build is on GitHub Actions; fix any Gradle errors from its log.
-- Never run on a real Android device/WebView. Debug APK only (debug-signed). Release signing is Stage 5.
+- The APK has **not been installed or launched** on a device/emulator by Claude (sandbox cannot run Android). Build itself succeeded in CI.
+- Never run on a real Android WebView. Debug APK only (debug-signed). Release signing is Stage 5.
 - Offline behaviour is by design (no network calls, no web fonts) but not device-tested.
 
 ### Known issues / limits
