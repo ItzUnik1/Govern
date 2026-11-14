@@ -59,7 +59,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          GOVERN_BUILD=${{ github.run_number }} ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Name the APK
         run: |
