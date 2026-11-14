@@ -135,7 +135,7 @@ export const EVENTS: EventDef[] = [
     weight: (s) => (s.confidence < 42 || s.flags.housingBoom > 0 || s.inflation > 9 ? 1.2 : 0.12),
     text: () => 'Depositors are queueing at a mid-sized bank. Regulators warn that bad loans are far larger than reported.',
     choices: [
-      { label: 'Full bailout', hint: 'Calms markets; costs a lot', run: (fx) => { fx.cost(1.2); fx.mod('Banking calm', 12, { confidence: 5 }); fx.approval(-2); return 'The bank is rescued at taxpayers\' expense. Voters fume, markets calm.'; } },
+      { label: 'Full bailout', hint: 'Calms markets; costs a lot', run: (fx) => { fx.cost(1.2); fx.mod('Banking calm', 12, { confidence: 5 }); fx.approval(-2); return 'The bank is rescued at taxpayers’ expense. Voters fume, markets calm.'; } },
       { label: 'Let it fail', hint: 'Cheap now, contagion risk', run: (fx) => { fx.mod('Credit crunch', 9, { growth: -1.2, unemployment: 0.8, confidence: -6 }); fx.approval(-3); return 'Credit dries up as other banks pull back. A sharp slowdown follows.'; } },
       { label: 'Guarantee deposits only', hint: 'Middle path', run: (fx) => { fx.cost(0.4); fx.mod('Credit tightening', 6, { growth: -0.3 }); fx.approval(-1); return 'Savers are protected, shareholders wiped out. The scare passes.'; } },
     ],
@@ -146,7 +146,7 @@ export const EVENTS: EventDef[] = [
     text: () => 'Thousands of students are marching over fees, overcrowded classrooms and graduate unemployment.',
     choices: [
       { label: 'Increase education funding', hint: 'Permanent budget increase', run: (fx) => { fx.spend('education', 0.3); fx.approval(2); return 'You commit to a permanent education funding boost.'; } },
-      { label: 'Hold the line', hint: 'Risk of escalation', run: (fx) => { fx.approval(-1); fx.stability(-2.5); return 'Demonstrations grow before dying down; the issue won\'t go away.'; } },
+      { label: 'Hold the line', hint: 'Risk of escalation', run: (fx) => { fx.approval(-1); fx.stability(-2.5); return 'Demonstrations grow before dying down; the issue won’t go away.'; } },
       { label: 'Convene a commission', hint: 'Buys time', run: (fx) => { fx.stability(1); fx.flag('eduCommission', 1); return 'A commission is formed. Students are sceptical but the heat goes out.'; } },
     ],
   },
@@ -164,7 +164,7 @@ export const EVENTS: EventDef[] = [
     ],
   },
   {
-    id: 'farmers', title: 'Farmers\' protest', icon: '🚜', category: 'Politics', cooldown: 24,
+    id: 'farmers', title: 'Farmers’ protest', icon: '🚜', category: 'Politics', cooldown: 24,
     weight: (_s, c) => (isC(c, 'india', 'nepal') ? 0.9 : isC(c, 'canada', 'australia', 'germany') ? 0.5 : 0.2),
     text: () => 'Farmers are blockading highways, demanding guaranteed prices and relief from rising input costs.',
     choices: [

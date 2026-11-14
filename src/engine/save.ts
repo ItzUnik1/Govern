@@ -1,3 +1,4 @@
+import { initEco } from './economy';
 // Local save system: five manual slots + one autosave, all in localStorage (works offline in the Android WebView).
 import { COUNTRIES } from './countries';
 import { SAVE_VERSION, dateLabel } from './sim';
@@ -57,6 +58,8 @@ function migrate(s: GameState): GameState {
   // Forward-compatible defaults for fields added in later versions.
   s.flags = s.flags ?? {};
   s.defAvg = s.defAvg ?? COUNTRIES[s.countryId].deficitPct0;
+  if (!s.eco) s.eco = initEco(COUNTRIES[s.countryId]);
+  s.projects = s.projects ?? [];
   return s;
 }
 export function loadSlot(n: number | 'auto'): GameState | null {

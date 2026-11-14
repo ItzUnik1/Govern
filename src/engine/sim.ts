@@ -1,5 +1,7 @@
 // GOVERN simulation engine. Pure TypeScript, no UI/DOM dependencies (runs headless in Node for tests).
 // See docs/SIMULATION.md for the formulas explained in plain language.
+import { initEco, stepEco, ecoMetrics } from './economy';
+import { projectCostPct, stepProjects } from './projects';
 import { COUNTRIES, administration0 } from './countries';
 import { ACTIONS, PROGRAMS } from './programs';
 import { availableChoices, drawEvent, getEvent, type Fx } from './events';
@@ -61,6 +63,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
+    eco: initEco(c), projects: [],
   };
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);
@@ -69,12 +72,18 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
   return s;
 }
 
+function ecoPoint(s: GameState) {
+  const m = ecoMetrics(s, getCountry(s));
+  return { gdppc: round(m.gdpPc, 0), xPct: round(m.exportsBn / s.gdp * 100, 1), mPct: round(m.importsBn / s.gdp * 100, 1), tbPct: round(m.tradeBalPct, 2), fdi: round(m.fdiPct, 2), resM: round(m.reservesMonths, 1), gini: round(m.gini, 1), hdi: round(m.hdi, 3) };
+}
+
 function historyPoint(s: GameState): HistoryPoint {
   const f = fiscal(s);
   return {
     y: s.y, m: s.m, gdp: round(s.gdp, 2), growth: round(s.growth, 2), inflation: round(s.inflation, 2), unemployment: round(s.unemployment, 2),
     debtPct: round(debtPct(s), 1), balancePct: round(-f.deficitPct, 2), approval: round(s.approval, 1), stability: round(s.stability, 1),
     confidence: round(s.confidence, 1), currency: round(s.currency, 1), rate: round(s.policyRate, 2), livingStd: round(s.livingStd, 1),
+    ...ecoPoint(s),
   };
 }
 
@@ -130,7 +139,7 @@ export function fiscal(s: GameState): Fiscal {
   const extra = mod.revenuePct;
   const revenuePct = income + corp + vat + other + extra;
   const programSpend = Object.values(s.spend).reduce((a, b) => a + b, 0);
-  const progCost = programCostPct(s);
+  const progCost = programCostPct(s) + projectCostPct(s);
   const spendPct = programSpend + progCost;
   const interestAnnual = (s.debt * s.avgCost) / 100;
   const interestPct = (interestAnnual / s.gdp) * 100;
@@ -177,12 +186,13 @@ export function stockTargets(s: GameState): Record<StockKey, number> {
     return clamp(base + delta, 0, 100);
   };
   const adm0 = administration0(c);
+  const ab = s.eco?.assetBonus ?? { education: 0, health: 0, infrastructure: 0, security: 0, efficiency: 0 };
   return {
-    education: stockTarget('education', s.spend.education, c.spend0.education),
-    health: stockTarget('health', s.spend.health, c.spend0.health),
-    infrastructure: stockTarget('infrastructure', s.spend.infrastructure, c.spend0.infrastructure),
+    education: clamp(stockTarget('education', s.spend.education, c.spend0.education) + ab.education, 0, 100),
+    health: clamp(stockTarget('health', s.spend.health, c.spend0.health) + ab.health, 0, 100),
+    infrastructure: clamp(stockTarget('infrastructure', s.spend.infrastructure, c.spend0.infrastructure) + ab.infrastructure, 0, 100),
     security: stockTarget('security', s.spend.defence, c.spend0.defence),
-    efficiency: clamp(st0.efficiency + 30 * Math.log(Math.max(s.spend.administration, 0.3) / adm0) + pe.efficiency, 0, 100),
+    efficiency: clamp(st0.efficiency + 30 * Math.log(Math.max(s.spend.administration, 0.3) / adm0) + pe.efficiency + ab.efficiency, 0, 100),
   };
 }
 
@@ -346,8 +356,14 @@ export function advanceMonth(input: GameState): GameState {
   const br0 = c.policyRate0 + c.premium0;
   s.avgCost = Math.max(0.1, s.avgCost + 0.012 * ((c.avgCost0 + (br - br0)) - s.avgCost));
 
+  // --- 6b. Construction projects and the wider economy (sectors, trade, FDI, reserves) ---
+  const projLoad = stepProjects(s, c, rnd, notes);
+  const ex = stepEco(s, c, projLoad);
+  s.growth = clamp(s.growth + 0.35 * ex.growthAdj, -12, 12);
+  s.confidence = clamp(s.confidence + ex.confAdj * 0.1, 0, 100);
+
   // --- 7. Currency ---
-  const fair = 100 - 1.5 * (s.inflation - c.inflationTarget) - 0.12 * Math.max(0, dp - Math.max(80, c.debtPct0)) * (1 - c.reserveCurrency) + 0.15 * (s.stability - c.stability0) + 0.4 * (s.policyRate - rule0) + 0.1 * (s.growth - c.potentialGrowth) + pe.currency + 0.01 * (s.commodity - 100) * (c.commodityExports - c.fuelImports);
+  const fair = 100 - 1.5 * (s.inflation - c.inflationTarget) - 0.12 * Math.max(0, dp - Math.max(80, c.debtPct0)) * (1 - c.reserveCurrency) + 0.15 * (s.stability - c.stability0) + 0.4 * (s.policyRate - rule0) + 0.1 * (s.growth - c.potentialGrowth) + pe.currency + 0.01 * (s.commodity - 100) * (c.commodityExports - c.fuelImports) + ex.fairAdj;
   s.currency = clamp(s.currency + 0.08 * (fair - s.currency) + 0.5 * diff.economy * normal(rnd), 40, 160);
 
   // --- 8. Investor confidence ---

@@ -2,10 +2,7 @@
 
 **Rule:** all stages build on this one project. Never remove working features. Test before moving on.
 
-## Status: STAGE 1 – code complete; debug APK BUILT by GitHub Actions (build-2); not yet installed/tested on a device
-
-Repo: github.com/ItzUnik1/Govern (Claude has push access via the Claude GitHub app). APK: Releases → build-2 → GOVERN-v0.1.0-build2-debug.apk (4.2 MB, bundle verified inside the APK).
-CI lessons: `android-actions/setup-android` fails (package 'tools' gone) → use the runner's preinstalled SDK + `sdkmanager --licenses`. Job logs are readable via the public GitHub API.
+## Status: STAGE 1 – code complete and tested locally; APK build NOT yet run
 
 ### Done (Stage 1)
 - React + TypeScript + Vite mobile-first UI; Capacitor 8 Android project in `android/` (portrait, back button handled)
@@ -22,8 +19,8 @@ CI lessons: `android-actions/setup-android` fails (package 'tools' gone) → use
 - Browser E2E (`scripts/e2e.cjs`, Playwright, 390×800): title → select → play 60 months with events/election → save/reload/load/delete; zero console errors
 
 ### NOT verified (be honest)
-- The APK has **not been installed or launched** on a device/emulator by Claude (sandbox cannot run Android). Build itself succeeded in CI.
-- Never run on a real Android WebView. Debug APK only (debug-signed). Release signing is Stage 5.
+- The APK has **not** been built or installed (sandbox cannot reach Google/Gradle servers). First real build is on GitHub Actions; fix any Gradle errors from its log.
+- Never run on a real Android device/WebView. Debug APK only (debug-signed). Release signing is Stage 5.
 - Offline behaviour is by design (no network calls, no web fonts) but not device-tested.
 
 ### Known issues / limits
@@ -40,3 +37,16 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 
 ## Where things are
 `src/engine/` types, countries, sim (monthly step, elections, legacy), events, programs, save · `src/ui/` screens · `scripts/` tests · `docs/SIMULATION.md` formulas
+
+
+## Update: Economy dashboard, National Projects, typography (before Stage 2)
+- **Economy** screen now has Indicators / Trade / Sectors / People / Trends / Public finances.
+  - Trade: exports, imports, trade balance, current account, FDI, remittances & aid, FX reserves (months of imports).
+  - Sectors: agriculture, manufacturing, services, tourism, technology, energy, construction (share of GDP and growth).
+  - People: GDP per person, real income index, HDI estimate, Gini, price level, debt per person, service quality.
+  - New trend charts: GDP/person, exports, imports, trade balance, FDI, reserves, inequality, HDI.
+- **Build** tab: 20 generic + 2 country-specific large projects (cost % of GDP, 3-8 year build, delays/overruns driven by state efficiency, pause/resume/cancel, capacity slots, completion effects, upkeep). Overview shows project progress.
+- New engine files: `econdata.ts`, `economy.ts`, `projects.ts`; `GameState.eco` and `GameState.projects` (old saves are migrated).
+- Typography: bundled Inter + Fraunces fonts, rem scale, Settings > text size (Small/Default/Large), typographic apostrophes and real minus signs.
+- Verified: typecheck, headless sims (`scripts/simtest.ts`, `scripts/ecoprobe.ts`), Playwright E2E at phone size. Debug APK via CI; not tested on a real device.
+- **Stage 2 (parties, parliament, coalitions, ministers) is NOT started yet** - design is in this file's notes and `src/engine/parties.ts` (data only).

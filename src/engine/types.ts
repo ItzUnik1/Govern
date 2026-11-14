@@ -26,6 +26,30 @@ export interface Modifier {
   revenuePct?: number; // pp of GDP (annual) revenue (negative = cost)
 }
 
+export interface EcoState {
+  sectors: Record<string, { share: number; growth: number }>;
+  exportsPct: number; importsPct: number; caPct: number; otherCA: number;
+  fdiPct: number; reservesMonths: number; gini: number; priceIdx: number;
+  assetBonus: Record<StockKey, number>;
+  exportBoost: number;
+  sectorBoost: Record<string, number>;
+}
+
+export interface ProjectState {
+  id: string;
+  status: 'building' | 'paused' | 'complete';
+  startTurn: number;
+  progress: number; // 0..100
+  spent: number; // USD bn so far
+  budget: number; // USD bn planned
+  plannedMonths: number;
+  delayMonths: number;
+  overrunPct: number;
+  monthlySpend: number; // USD bn at the current pace
+  completedTurn: number | null;
+  log: string[];
+}
+
 export interface CountryDef {
   id: string;
   name: string;
@@ -100,6 +124,7 @@ export interface HistoryPoint {
   currency: number;
   rate: number;
   livingStd: number;
+  gdppc?: number; xPct?: number; mPct?: number; tbPct?: number; fdi?: number; resM?: number; gini?: number; hdi?: number;
 }
 
 export interface ReportDelta {
@@ -204,6 +229,9 @@ export interface GameState {
   reports: MonthReport[];
   eventHistory: EventRecord[];
   electionHistory: ElectionRecord[];
+
+  eco: EcoState;
+  projects: ProjectState[];
 }
 
 export interface Fiscal {

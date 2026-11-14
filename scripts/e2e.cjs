@@ -26,7 +26,7 @@ const OUT = process.argv[2];
   await shot('04-overview');
 
   // navigate all tabs
-  for (const [label, check] of [['Economy', 'Indicators'], ['Government', 'Budget forecast'], ['Politics', 'Election outlook'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
+  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['Build', 'Construction slots'], ['Politics', 'Election outlook'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
     await page.locator('.nav button', { hasText: label }).click();
     must(await page.getByText(check).first().isVisible(), `tab ${label} renders (${check})`);
   }
@@ -35,7 +35,7 @@ const OUT = process.argv[2];
   await click('Public finances'); await shot('06-finances');
 
   // change a policy
-  await page.locator('.nav button', { hasText: 'Government' }).click();
+  await page.locator('.nav button', { hasText: 'Govern' }).click();
   const before = await page.locator('.card', { hasText: 'Budget forecast' }).innerText();
   const slider = page.locator('input[type=range]').first();
   await slider.fill('40');

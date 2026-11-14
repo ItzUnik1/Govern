@@ -37,7 +37,7 @@ export const COUNTRIES: Record<string, CountryDef> = {
     constitution:
       'Constitution of 1950. The Prime Minister leads the Union cabinet answerable to the 543-seat Lok Sabha (first-past-the-post). Five-year terms. States control a large share of public spending, so the centre cannot simply command policy.',
     history:
-      'The world\'s most populous democracy, a fast-growing but still lower-middle-income economy. Reforms since 1991 unlocked growth; jobs for a huge young workforce, food prices and fuel imports remain the political pressure points.',
+      'The world’s most populous democracy, a fast-growing but still lower-middle-income economy. Reforms since 1991 unlocked growth; jobs for a huge young workforce, food prices and fuel imports remain the political pressure points.',
     challenges: ['Huge youth workforce needs jobs', 'Imports ~85% of its oil – fuel spikes hurt', 'Low tax-to-GDP ratio and high general-government deficit', 'Federal tensions with states', 'Monsoon-dependent food prices'],
     strengths: ['Strong growth potential (6%+)', 'Large domestic market', 'Services and technology sector', 'Deep consumer demand'],
     resources: ['Agriculture', 'Services/IT', 'Coal'],
@@ -91,7 +91,7 @@ export const COUNTRIES: Record<string, CountryDef> = {
     constitution:
       'Constitution of 1787. The President is head of state and government, elected for four years and limited to two terms. Congress (House + Senate) controls taxes and spending, so a divided Congress limits you. Federal and state governments share power.',
     history:
-      'The world\'s largest economy and issuer of the reserve currency, with a deeply polarised electorate, a very high deficit and the world\'s largest military. Voters swing hard against whoever holds the White House.',
+      'The world’s largest economy and issuer of the reserve currency, with a deeply polarised electorate, a very high deficit and the world’s largest military. Voters swing hard against whoever holds the White House.',
     challenges: ['Deep polarisation – approval is volatile', 'Deficit ~7.5% of GDP at full employment', 'Interest bill ~4% of GDP', 'Gridlock: shutdown and debt-ceiling standoffs', 'Strict two-term limit'],
     strengths: ['Reserve currency – cheap borrowing', 'Technology and innovation leader', 'Energy self-sufficiency', 'Deep capital markets'],
     resources: ['Technology', 'Shale oil & gas', 'Agriculture', 'Finance'],
@@ -118,7 +118,7 @@ export const COUNTRIES: Record<string, CountryDef> = {
     constitution:
       'Basic Law of 1949. The Chancellor is elected by the Bundestag (mixed-member proportional) and can only be removed by a constructive vote of no confidence. The constitutional "debt brake" plus EU fiscal rules effectively cap the deficit at ~3% of GDP unless an emergency is declared. Coalitions are always required.',
     history:
-      'Europe\'s industrial powerhouse, hit by the loss of cheap Russian gas, Chinese competition in cars and machinery, ageing demographics and years of under-investment in infrastructure.',
+      'Europe’s industrial powerhouse, hit by the loss of cheap Russian gas, Chinese competition in cars and machinery, ageing demographics and years of under-investment in infrastructure.',
     challenges: ['Debt brake + EU rules: deficits above ~3% of GDP trigger a constitutional crisis', 'Industry exposed to energy prices and China', 'Rapidly ageing workforce', 'Crumbling infrastructure and slow digitalisation', 'Eurozone: interest rates are set in Frankfurt, not by you'],
     strengths: ['Export machine', 'Low debt and top credit', 'Skilled workforce and apprenticeships', 'Stable politics'],
     resources: ['Manufacturing', 'Engineering', 'Chemicals', 'Renewables'],
@@ -151,7 +151,7 @@ export const COUNTRIES: Record<string, CountryDef> = {
     resources: ['Advanced manufacturing', 'Robotics', 'Electronics', 'Automotive'],
     devLevel: 'High income',
     difficultyStars: 3,
-    partyName: 'Your party', opposition: 'A divided opposition, but your own party\'s factions are the real threat',
+    partyName: 'Your party', opposition: 'A divided opposition, but your own party’s factions are the real threat',
     relationships: 'US (security alliance), China (largest trade partner, rival), South Korea, Taiwan, ASEAN.',
     population: 123, gdp: 4200, potentialGrowth: 0.4, popGrowth: -0.5,
     inflationTarget: 2, inflation0: 2.5, unemployment0: 2.5, naturalUnemployment: 2.5,

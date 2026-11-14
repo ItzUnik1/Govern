@@ -4,8 +4,9 @@ import { getCountry, MONTHS } from '../engine/sim';
 import type { GameState } from '../engine/types';
 import { Card, Seg, Stars, fmtSigned } from './common';
 import type { Ctx } from './ctx';
+import { getTextSize, setTextSize, type TextSize } from './prefs';
 
-type Sub = 'menu' | 'history' | 'save' | 'brief' | 'help';
+type Sub = 'menu' | 'history' | 'save' | 'brief' | 'help' | 'settings';
 
 export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: () => void }) {
   const [sub, setSub] = useState<Sub>('menu');
@@ -15,6 +16,7 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
       ['save', '💾', 'Save / Load', 'Five manual slots plus autosave'],
       ['brief', '🌐', 'Country briefing', 'Constitution, challenges and strengths'],
       ['help', '❓', 'How the simulation works', 'Formulas in plain language'],
+      ['settings', '🔠', 'Settings', 'Text size'],
     ];
     return (
       <>
@@ -34,7 +36,20 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
       {sub === 'save' && <SaveLoad {...p} />}
       {sub === 'brief' && <Brief {...p} />}
       {sub === 'help' && <Help />}
+      {sub === 'settings' && <Settings />}
     </>
+  );
+}
+
+function Settings() {
+  const [sz, setSz] = useState<TextSize>(getTextSize());
+  return (
+    <Card title="Text size">
+      <Seg value={sz} onChange={(v) => { setSz(v); setTextSize(v); }} options={[{ id: 's', label: 'Small' }, { id: 'm', label: 'Default' }, { id: 'l', label: 'Large' }]} />
+      <h2 style={{ marginTop: 14 }}>Prime Minister’s briefing</h2>
+      <p className="small" style={{ marginTop: 4 }}>Growth is steady at 2.4%, inflation is easing, and approval holds at 46%. Preview text updates immediately.</p>
+      <p className="tiny muted">The setting is stored on this device only.</p>
+    </Card>
   );
 }
 
@@ -70,7 +85,7 @@ function History({ s }: Ctx) {
           if (m.stability) bits.push(`stability ${fmtSigned(m.stability)}`);
           if (m.confidence) bits.push(`confidence ${fmtSigned(m.confidence)}`);
           if (m.revenuePct) bits.push(`revenue ${fmtSigned(m.revenuePct, 2)}% GDP`);
-          return <Card key={i}><b>{m.label}</b><div className="small muted">{bits.join(' · ')} · {m.monthsLeft} month(s) left</div></Card>;
+          return <Card key={i}><b>{m.label}</b><div className="small muted">{bits.join(' · ')} · {m.monthsLeft > 5000 ? 'permanent' : `${m.monthsLeft} month(s) left`}</div></Card>;
         }))}
     </>
   );

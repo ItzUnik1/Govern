@@ -4,7 +4,7 @@ import type { HistoryPoint } from '../engine/types';
 export function LineChart({ data, years, color = '#4f8cff', fmt = (x: number) => x.toFixed(1), refLine, height = 120 }: {
   data: number[]; years: number[]; color?: string; fmt?: (x: number) => string; refLine?: number; height?: number;
 }) {
-  const W = 320, H = height, pl = 34, pr = 6, pt = 8, pb = 16;
+  const W = 320, H = height + 8, pl = 42, pr = 8, pt = 10, pb = 22;
   if (data.length < 2) return <div className="muted small" style={{ padding: 20, textAlign: 'center' }}>Advance a few months to see the trend.</div>;
   let lo = Math.min(...data), hi = Math.max(...data);
   if (refLine !== undefined) { lo = Math.min(lo, refLine); hi = Math.max(hi, refLine); }
@@ -16,24 +16,24 @@ export function LineChart({ data, years, color = '#4f8cff', fmt = (x: number) =>
   const ticks = [lo + pad, (lo + hi) / 2, hi - pad];
   const yl = [0, Math.floor((data.length - 1) / 2), data.length - 1];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img">
+    <svg className="chart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img">
       {ticks.map((t, i) => (
         <g key={i}>
           <line x1={pl} x2={W - pr} y1={y(t)} y2={y(t)} stroke="#26334f" strokeWidth="0.6" />
-          <text x={pl - 4} y={y(t) + 3} textAnchor="end">{fmt(t)}</text>
+          <text x={pl - 5} y={y(t) + 4} textAnchor="end">{fmt(t)}</text>
         </g>
       ))}
       {refLine !== undefined && <line x1={pl} x2={W - pr} y1={y(refLine)} y2={y(refLine)} stroke="#f5b84b" strokeDasharray="3 3" strokeWidth="0.9" />}
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
       {yl.map((i) => (
-        <text key={i} x={x(i)} y={H - 3} textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}>{years[i]}</text>
+        <text key={i} x={x(i)} y={H - 4} textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}>{years[i]}</text>
       ))}
     </svg>
   );
 }
 
-export type SeriesKey = 'growth' | 'inflation' | 'unemployment' | 'debtPct' | 'balancePct' | 'approval' | 'stability' | 'confidence' | 'currency' | 'rate' | 'gdp';
-export const series = (h: HistoryPoint[], k: SeriesKey) => ({ data: h.map((p) => p[k] as number), years: h.map((p) => p.y) });
+export type SeriesKey = 'growth' | 'inflation' | 'unemployment' | 'debtPct' | 'balancePct' | 'approval' | 'stability' | 'confidence' | 'currency' | 'rate' | 'gdp' | 'gdppc' | 'xPct' | 'mPct' | 'tbPct' | 'fdi' | 'resM' | 'gini' | 'hdi';
+export const series = (h: HistoryPoint[], k: SeriesKey) => ({ data: h.map((p) => (p[k] ?? 0) as number), years: h.map((p) => p.y) });
 
 export function StackBar({ parts }: { parts: { label: string; value: number; color: string }[] }) {
   const total = parts.reduce((a, p) => a + Math.max(0, p.value), 0) || 1;

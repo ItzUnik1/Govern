@@ -4,6 +4,8 @@ import { LineChart, StackBar, series, type SeriesKey } from './charts';
 import { Card, Stat, fmtMoney, fmtPct, fmtSigned, Seg } from './common';
 import type { Ctx } from './ctx';
 import { SPEND_LABELS } from '../engine/countries';
+import { ecoMetrics } from '../engine/economy';
+import { SECTOR_IDS, SECTOR_LABELS } from '../engine/econdata';
 
 const CH: { id: SeriesKey; label: string; fmt: (x: number) => string; color: string; ref?: (t: number) => number }[] = [
   { id: 'growth', label: 'Growth', fmt: (x) => x.toFixed(1) + '%', color: '#34c88a' },
@@ -14,19 +16,102 @@ const CH: { id: SeriesKey; label: string; fmt: (x: number) => string; color: str
   { id: 'gdp', label: 'GDP', fmt: (x) => (x >= 1000 ? (x / 1000).toFixed(1) + 'T' : x.toFixed(0)), color: '#8fd0ff' },
   { id: 'currency', label: 'Currency', fmt: (x) => x.toFixed(0), color: '#e0a3ff' },
   { id: 'confidence', label: 'Confidence', fmt: (x) => x.toFixed(0), color: '#7ad7c9' },
+  { id: 'gdppc', label: 'GDP / person', fmt: (x) => (x >= 10000 ? (x / 1000).toFixed(0) + 'k' : x >= 1000 ? (x / 1000).toFixed(1) + 'k' : x.toFixed(0)), color: '#8fd0ff' },
+  { id: 'xPct', label: 'Exports', fmt: (x) => x.toFixed(0) + '%', color: '#34c88a' },
+  { id: 'mPct', label: 'Imports', fmt: (x) => x.toFixed(0) + '%', color: '#ff7b7b' },
+  { id: 'tbPct', label: 'Trade bal.', fmt: (x) => x.toFixed(1) + '%', color: '#f5b84b' },
+  { id: 'fdi', label: 'FDI', fmt: (x) => x.toFixed(1) + '%', color: '#b48cff' },
+  { id: 'resM', label: 'Reserves', fmt: (x) => x.toFixed(1) + ' mo', color: '#7ad7c9' },
+  { id: 'gini', label: 'Inequality', fmt: (x) => x.toFixed(0), color: '#e0a3ff' },
+  { id: 'hdi', label: 'HDI', fmt: (x) => x.toFixed(2), color: '#4f8cff' },
 ];
 
 export default function Economy({ s }: Ctx) {
-  const [tab, setTab] = useState<'now' | 'trends' | 'budget'>('now');
+  const [tab, setTab] = useState<'now' | 'trade' | 'sectors' | 'people' | 'trends' | 'budget'>('now');
   const [ch, setCh] = useState<SeriesKey>('growth');
   const c = getCountry(s);
   const f = fiscal(s);
+  const m = ecoMetrics(s, c);
+  const e = s.eco;
   const cur = CH.find((x) => x.id === ch)!;
   const sr = series(s.history, ch);
   const ref = ch === 'inflation' ? c.inflationTarget : ch === 'growth' ? c.potentialGrowth : undefined;
   return (
     <>
-      <Seg value={tab} onChange={setTab} options={[{ id: 'now', label: 'Indicators' }, { id: 'trends', label: 'Trends' }, { id: 'budget', label: 'Public finances' }]} />
+      <div className="chips">
+        {([['now', 'Indicators'], ['trade', 'Trade'], ['sectors', 'Sectors'], ['people', 'People'], ['trends', 'Trends'], ['budget', 'Public finances']] as const).map(([id, l]) => (
+          <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{l}</button>
+        ))}
+      </div>
+      {tab === 'trade' && (
+        <>
+          <div className="grid2">
+            <Stat label="Exports" value={fmtMoney(m.exportsBn)} sub={`${fmtPct(e.exportsPct, 1)} of GDP`} />
+            <Stat label="Imports" value={fmtMoney(m.importsBn)} sub={`${fmtPct(e.importsPct, 1)} of GDP`} />
+            <Stat label="Trade balance" value={`${m.tradeBalBn < 0 ? '' : '+'}${fmtMoney(m.tradeBalBn)}`} sub={`${fmtSigned(m.tradeBalPct)}% of GDP`} cls={m.tradeBalPct < -6 ? 'bad' : m.tradeBalPct < 0 ? 'warn' : 'good'} />
+            <Stat label="Current account" value={`${m.caBn < 0 ? '' : '+'}${fmtMoney(m.caBn)}`} sub={`${fmtSigned(m.caPct)}% of GDP`} cls={m.caPct < -5 ? 'bad' : m.caPct < -2.5 ? 'warn' : 'good'} />
+            <Stat label="Foreign investment (FDI)" value={fmtMoney(m.fdiBn)} sub={`${fmtPct(m.fdiPct, 2)} of GDP / yr`} />
+            <Stat label="Remittances & aid" value={fmtMoney(m.remitBn + (c.aid / 100) * s.gdp)} sub={`${fmtPct(c.remittances + c.aid, 1)} of GDP`} />
+            <Stat label="FX reserves" value={`${m.reservesMonths.toFixed(1)} mo`} sub={`${fmtMoney(m.reservesBn)} · safe ≥ ${m.safeMonths.toFixed(1)} mo`} cls={m.reservesMonths < m.safeMonths ? 'bad' : m.reservesMonths < m.safeMonths * 1.5 ? 'warn' : 'good'} />
+            <Stat label="Currency index" value={s.currency.toFixed(0)} sub="100 = start" />
+          </div>
+          <Card title="Exports vs imports (% of GDP)">
+            <LineChart data={series(s.history, 'xPct').data} years={series(s.history, 'xPct').years} color="#34c88a" fmt={(x) => x.toFixed(0) + '%'} />
+            <div className="tiny muted" style={{ margin: '6px 0' }}>Exports (green) · imports below</div>
+            <LineChart data={series(s.history, 'mPct').data} years={series(s.history, 'mPct').years} color="#ff7b7b" fmt={(x) => x.toFixed(0) + '%'} height={90} />
+          </Card>
+          <Card title="How trade works here">
+            <ul className="tight small">
+              <li>A weaker currency boosts exports and makes imports dearer; a stronger one does the opposite.</li>
+              <li>World demand and commodity prices move exports; strong domestic growth pulls in imports.</li>
+              <li>Persistent current-account deficits and thin reserves weaken the currency and investor confidence.</li>
+              <li>Export-push policy, ports, SEZs and manufacturing strength raise exports over time.</li>
+            </ul>
+          </Card>
+        </>
+      )}
+      {tab === 'sectors' && (
+        <>
+          <Card title="Economy by sector (% of GDP)">
+            <StackBar parts={SECTOR_IDS.map((id) => ({ label: SECTOR_LABELS[id].label.split(' ')[0], value: e.sectors[id].share, color: SECTOR_LABELS[id].color }))} />
+          </Card>
+          {SECTOR_IDS.map((id) => {
+            const sec = e.sectors[id];
+            const L = SECTOR_LABELS[id];
+            const out = (sec.share / 100) * s.gdp;
+            return (
+              <div className="card" key={id}>
+                <div className="row between"><b>{L.icon} {L.label}</b><b>{fmtPct(sec.share, 1)}</b></div>
+                <div className="row between small muted"><span>Output {fmtMoney(out)}</span><span className={sec.growth < 0 ? 'bad' : ''}>growth {fmtSigned(sec.growth, 1)}%</span></div>
+              </div>
+            );
+          })}
+          <div className="tiny muted">Sectors grow faster or slower than the economy depending on your policies: infrastructure, education, the currency, taxes and national projects all shift the mix.</div>
+        </>
+      )}
+      {tab === 'people' && (
+        <>
+          <div className="grid2">
+            <Stat label="GDP per person" value={`$${Math.round(m.gdpPc).toLocaleString('en-US')}`} sub="nominal, per year" />
+            <Stat label="Real income index" value={m.realIncomeIdx.toFixed(0)} sub="per person, start = 100" cls={m.realIncomeIdx >= 100 ? 'good' : 'bad'} />
+            <Stat label="Human development" value={m.hdi.toFixed(3)} sub={m.hdi >= 0.8 ? 'Very high' : m.hdi >= 0.7 ? 'High' : m.hdi >= 0.55 ? 'Medium' : 'Low'} />
+            <Stat label="Inequality (Gini)" value={m.gini.toFixed(1)} sub="0 = equal, 100 = unequal" cls={m.gini > 45 ? 'warn' : ''} />
+            <Stat label="Price level" value={m.priceIdx.toFixed(0)} sub="start = 100" />
+            <Stat label="Population" value={`${s.population.toFixed(1)} m`} sub={`start ${c.population} m`} />
+            <Stat label="Debt per person" value={`$${Math.round(m.debtPerPerson).toLocaleString('en-US')}`} sub={`${fmtPct(debtPct(s), 0)} of GDP`} />
+            <Stat label="Living standards" value={s.livingStd.toFixed(0)} sub="vs. trend" />
+          </div>
+          <Card title="GDP per person"><LineChart data={series(s.history, 'gdppc').data} years={series(s.history, 'gdppc').years} color="#8fd0ff" fmt={(x) => (x >= 1000 ? (x / 1000).toFixed(1) + 'k' : x.toFixed(0))} /></Card>
+          <Card title="Service quality (0–100)">
+            {(['education', 'health', 'infrastructure', 'security', 'efficiency'] as const).map((k) => (
+              <div key={k} style={{ margin: '6px 0' }}>
+                <div className="row between small"><span style={{ textTransform: 'capitalize' }}>{k}</span><b>{s.stocks[k].toFixed(0)}</b></div>
+                <div className="bar"><i style={{ width: `${s.stocks[k]}%` }} /></div>
+              </div>
+            ))}
+          </Card>
+        </>
+      )}
       {tab === 'now' && (
         <>
           <div className="grid2">

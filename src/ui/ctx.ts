@@ -1,6 +1,6 @@
 import type { GameState } from '../engine/types';
 
-export type Tab = 'overview' | 'economy' | 'government' | 'politics' | 'more';
+export type Tab = 'overview' | 'economy' | 'government' | 'politics' | 'build' | 'more';
 
 export interface Ctx {
   s: GameState;

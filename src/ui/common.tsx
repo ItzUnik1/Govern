@@ -2,11 +2,15 @@ import type { ReactNode } from 'react';
 import type { GameState } from '../engine/types';
 
 export const fmtPct = (x: number, d = 1) => `${x.toFixed(d)}%`;
-export const fmtSigned = (x: number, d = 1) => `${x >= 0 ? '+' : ''}${x.toFixed(d)}`;
+/** Signed number with a true minus sign (U+2212). Values that round to zero show without a sign. */
+export const fmtSigned = (x: number, d = 1) => {
+  const r = Number(x.toFixed(d));
+  return r === 0 ? (0).toFixed(d) : `${r > 0 ? '+' : '\u2212'}${Math.abs(r).toFixed(d)}`;
+};
 
 /** USD billions → "$1.23 trn" / "$456 bn" */
 export function fmtMoney(bn: number, d = 1): string {
-  const sign = bn < 0 ? '-' : '';
+  const sign = bn < 0 ? '\u2212' : '';
   const a = Math.abs(bn);
   if (a >= 1000) return `${sign}$${(a / 1000).toFixed(2)} trn`;
   if (a >= 100) return `${sign}$${a.toFixed(0)} bn`;
