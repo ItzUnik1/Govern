@@ -1,0 +1,81 @@
+name: Build Android APK
+
+# Start a build from your phone: GitHub app/website -> Actions -> "Build Android APK" -> Run workflow.
+# It also runs automatically on every push to main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write   # needed to publish the APK as a GitHub Release (a direct download link)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # Phone-friendly upload path: if you uploaded the project as govern-project.zip, unpack it.
+      - name: Unpack project zip (only if the repo contains just the zip)
+        run: |
+          if [ ! -f package.json ] && [ -f govern-project.zip ]; then
+            unzip -o govern-project.zip -d .
+          fi
+          test -f package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Type-check, run simulation tests and build the web bundle
+        run: |
+          npm run typecheck
+          npx tsx scripts/simtest.ts trace uk idle > /dev/null
+          npm run build
+
+      - name: Add Android platform if missing, then sync web bundle into it
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the APK
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/GOVERN-v${VERSION}-build${{ github.run_number }}-debug.apk"
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GOVERN-debug-apk
+          path: out/*.apk
+
+      - name: Publish as a GitHub Release (direct APK download link)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: GOVERN build ${{ github.run_number }} (debug APK)
+          body: |
+            Debug-signed APK, installable on Android phones (allow "install unknown apps" for your browser).
+            Built from commit ${{ github.sha }}.
+          prerelease: true
+          files: out/*.apk
