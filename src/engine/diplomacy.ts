@@ -56,8 +56,13 @@ const ORGS: Record<string, Org[]> = {
   canada: [...GL, { id: 'nato', name: 'NATO', kind: 'security', desc: 'Collective defence.', member0: true, trade: 0, stab: 2.5, cost: 0.1 }, { id: 'usmca', name: 'North American trade pact', kind: 'bloc', desc: 'Free trade with the US and Mexico.', member0: true, trade: 1.4, stab: 0, cost: 0.01 }],
   australia: [...GL, { id: 'anzus', name: 'ANZUS / AUKUS', kind: 'security', desc: 'Security pact with the US and UK.', member0: true, trade: 0, stab: 2.5, cost: 0.08 }, { id: 'cptpp', name: 'CPTPP trade pact', kind: 'bloc', desc: 'Pacific trade partnership.', member0: true, trade: 1.2, stab: 0, cost: 0.02 }],
 };
+import { X1_REL, X1_TRADE, X1_ORGS } from './extra1';
+Object.assign(REL, X1_REL);
+Object.assign(TRADE_MULT, X1_TRADE);
+for (const [k, v] of Object.entries(X1_ORGS)) ORGS[k] = [...GL, ...v];
+const EU_MEMBERS = ['germany', 'france', 'italy'];
 export const orgsOf = (s: GameState) => ORGS[s.countryId];
-export const nationsOf = (s: GameState) => WORLD.filter((n) => n.id !== s.countryId && !(s.countryId === 'germany' && n.id === 'eu'));
+export const nationsOf = (s: GameState) => WORLD.filter((n) => n.id !== s.countryId && !(EU_MEMBERS.includes(s.countryId) && n.id === 'eu'));
 export const getNation = (id: string) => WORLD.find((n) => n.id === id)!;
 export const baseRel = (cid: string, nid: string) => REL[cid]?.[nid] ?? 50;
 
@@ -71,7 +76,7 @@ export function tradeWeights(s: GameState): Record<string, number> {
 export function initDiplo(countryId: string): DiploState {
   const nations: Record<string, NationState> = {};
   for (const n of WORLD) {
-    if (n.id === countryId || (countryId === 'germany' && n.id === 'eu')) continue;
+    if (n.id === countryId || (EU_MEMBERS.includes(countryId) && n.id === 'eu')) continue;
     const rel = baseRel(countryId, n.id);
     nations[n.id] = { rel, trade: rel >= 78 ? 1 : 0, negotiating: 0, sanctionedByYou: false, sanctionsYou: false, ally: false };
   }
@@ -118,7 +123,7 @@ export function stepDiplomacy(s: GameState, rnd: () => number, notes: string[]):
   const allies = Object.keys(D.nations).filter((k) => D.nations[k].ally);
   for (const id of Object.keys(D.nations)) {
     const n = D.nations[id];
-    let target = baseRel(s.countryId, id) + 8 * n.trade + (n.ally ? 10 : 0) - (n.sanctionsYou ? 15 : 0) - (n.sanctionedByYou ? 18 : 0);
+    let target = baseRel(s.countryId, id) - 6 * ((s.difficulty.pressure ?? 1) - 1) + 8 * n.trade + (n.ally ? 10 : 0) - (n.sanctionsYou ? 15 : 0) - (n.sanctionedByYou ? 18 : 0);
     for (const a of allies) if (RIVALS[a]?.includes(id)) target -= 8;
     n.rel = clamp(n.rel + 0.04 * (target - n.rel) + 0.5 * gauss(), 2, 98);
     if (n.negotiating > 0) {
@@ -260,4 +265,5 @@ export function giveAid(s: GameState, id: string): string | null {
   return `Aid to ${getNation(id).name}: goodwill grows (+7).`;
 }
 export const topPartner = (s: GameState): string => { const w = tradeWeights(s); return Object.keys(w).sort((a, b) => w[b] - w[a])[0]; };
-export const rivalNation = (s: GameState): string | null => { const ids = Object.keys(s.dip.nations).filter((k) => s.dip.nations[k].rel < 48).sort((a, b) => s.dip.nations[a].rel - s.dip.nations[b].rel); return ids[0] ?? null; };
+/** The least friendly nation (events only fire when its relation is actually low). */
+export const rivalNation = (s: GameState): string | null => { const ids = Object.keys(s.dip.nations).sort((a, b) => s.dip.nations[a].rel - s.dip.nations[b].rel); return ids[0] ?? null; };

@@ -82,9 +82,9 @@ A political simulation for Android. Become Prime Minister (or President, or Chan
 
 ### Playable countries
 
-🇳🇵 Nepal · 🇮🇳 India · 🇬🇧 United Kingdom · 🇺🇸 United States · 🇩🇪 Germany · 🇯🇵 Japan · 🇨🇦 Canada · 🇦🇺 Australia
+🇳🇵 Nepal · 🇮🇳 India · 🇬🇧 United Kingdom · 🇺🇸 United States · 🇩🇪 Germany · 🇯🇵 Japan · 🇨🇦 Canada · 🇦🇺 Australia · 🇫🇷 France · 🇮🇹 Italy · 🇵🇰 Pakistan · 🇧🇩 Bangladesh · 🇿🇦 South Africa · 🇳🇿 New Zealand
 
-Each has its own constitution, electoral system, real parties, economy, resources and starting problems. More countries are on the way (target: 15–20).
+Each has its own constitution, electoral system, real parties, economy, resources and starting problems. More are on the way (target: 20).
 
 > Party names are real, but their positions, vote shares and all leaders are in-game approximations. The simulation is a game, not a forecast.
 
@@ -97,7 +97,7 @@ Each has its own constitution, electoral system, real parties, economy, resource
 | 1 | Core economy, budgets, events, saves, Android APK | ✅ Done |
 | 2 | Parliament, elections, coalitions, ministers, opposition | ✅ Done |
 | 3 | Diplomacy, trade, loans, projects, research | ✅ Done |
-| 4 | More countries, custom difficulty, new events, balancing | 🔜 Next |
+| 4 | More countries, custom difficulty, new events, balancing | 🚧 In progress (14 of 20 countries) |
 | 5 | Living world, scenarios, achievements | Planned |
 | 6 | Society, media, MPs and factions, referendums, regions | Planned |
 | 7 | Security and multi-step crises | Planned |

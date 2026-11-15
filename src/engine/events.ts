@@ -63,6 +63,7 @@ const DISASTER: Record<string, string> = {
   australia: 'Bushfires and flash floods are destroying homes and farmland across several states.',
 };
 
+import { X1_DISASTER, X1_REGION } from './extra1';
 const REGION: Record<string, string> = {
   nepal: 'Madhesh and Janajati groups are demanding greater provincial autonomy and fairer representation.',
   india: 'Several state governments are demanding a bigger share of tax revenue and more control over policy.',
@@ -73,6 +74,8 @@ const REGION: Record<string, string> = {
   japan: 'Rural prefectures complain that Tokyo is draining them of people and money.',
   australia: 'State premiers are demanding a bigger share of GST revenue.',
 };
+Object.assign(DISASTER, X1_DISASTER);
+Object.assign(REGION, X1_REGION);
 
 export const EVENTS: EventDef[] = [
   {
@@ -531,7 +534,7 @@ const bigPartner = (s: GameState) => topPartner(s);
 EVENTS.push(
   {
     id: 'borderIncident', title: 'Border incident', icon: '🚧', category: 'Diplomacy', cooldown: 24,
-    weight: (s) => (s.dip && s.pol.inGovernment && rivalNation(s) && s.dip.nations[rivalNation(s)!].rel < 42 ? 4 : 0),
+    weight: (s) => (s.dip && s.pol.inGovernment && rivalNation(s) && s.dip.nations[rivalNation(s)!].rel < 42 ? 4 * (s.difficulty.pressure ?? 1) : 0),
     text: (s) => `A confrontation with ${nm(rivalNation(s)!)} on the frontier has left soldiers injured. Newspapers demand a response, while diplomats urge calm.`,
     choices: [
       { label: 'Respond firmly', hint: 'Show strength: approval up, relations down, cost 0.1% GDP', run: (fx) => { const r = rivalNation(fx.s)!; fx.s.dip.nations[r].rel = Math.max(2, fx.s.dip.nations[r].rel - 8); fx.approval(2); fx.cost(0.1); fx.stability(-1); return 'Troops are reinforced. Rhetoric hardens.'; } },
@@ -541,7 +544,7 @@ EVENTS.push(
   },
   {
     id: 'tradeWar', title: 'Trade war threat', icon: '📦', category: 'Diplomacy', cooldown: 30,
-    weight: (s) => (s.dip && s.dip.nations[bigPartner(s)] && s.dip.nations[bigPartner(s)].rel < 55 && s.pol.inGovernment ? 4 : 0),
+    weight: (s) => (s.dip && s.dip.nations[bigPartner(s)] && s.dip.nations[bigPartner(s)].rel < 55 && s.pol.inGovernment ? 4 * (s.difficulty.pressure ?? 1) : 0),
     text: (s) => `${nm(bigPartner(s))}, your biggest trading partner, threatens heavy tariffs on your exports unless you open your markets further.`,
     choices: [
       { label: 'Retaliate with tariffs', hint: 'Exports and imports both shrink for a while', run: (fx) => { fx.s.dip.nations[bigPartner(fx.s)].rel -= 8; fx.mod('Trade war losses', 12, { growth: -0.25 }); fx.s.eco.exportsPct -= 0.5; fx.approval(1); return 'A tit-for-tat tariff spiral begins.'; } },
@@ -551,7 +554,7 @@ EVENTS.push(
   },
   {
     id: 'sanctionsOnYou', title: 'Sanctions threat', icon: '⛔', category: 'Diplomacy', cooldown: 36,
-    weight: (s) => (s.dip && Object.keys(s.dip.nations).some((k) => s.dip.nations[k].rel < 28 && getNation(k).size > 4 && !s.dip.nations[k].sanctionsYou) && s.pol.inGovernment ? 3 : 0),
+    weight: (s) => (s.dip && Object.keys(s.dip.nations).some((k) => s.dip.nations[k].rel < 28 && getNation(k).size > 4 && !s.dip.nations[k].sanctionsYou) && s.pol.inGovernment ? 3 * (s.difficulty.pressure ?? 1) : 0),
     text: (s) => { const k = Object.keys(s.dip.nations).filter((x) => getNation(x).size > 4).sort((a, b) => s.dip.nations[a].rel - s.dip.nations[b].rel)[0]; return `${nm(k)} warns it will impose sanctions on your country over the deteriorating relationship.`; },
     choices: [
       { label: 'Appease', hint: 'Cost 0.2% GDP; relations recover', run: (fx) => { const k = Object.keys(fx.s.dip.nations).filter((x) => getNation(x).size > 4).sort((a, b) => fx.s.dip.nations[a].rel - fx.s.dip.nations[b].rel)[0]; fx.s.dip.nations[k].rel += 14; fx.cost(0.2); fx.approval(-1.5); return 'A face-saving package heads off the sanctions.'; } },

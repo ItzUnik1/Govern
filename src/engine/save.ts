@@ -60,6 +60,7 @@ export const saveAuto = (s: GameState) => write(AUTO_KEY, s);
 function migrate(s: GameState): GameState {
   // Forward-compatible defaults for fields added in later versions.
   s.flags = s.flags ?? {};
+  s.difficulty.pressure = s.difficulty.pressure ?? 1; s.difficulty.start = s.difficulty.start ?? 1;
   s.defAvg = s.defAvg ?? COUNTRIES[s.countryId].deficitPct0;
   if (!s.eco) s.eco = initEco(COUNTRIES[s.countryId]);
   s.projects = s.projects ?? [];

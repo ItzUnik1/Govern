@@ -2,6 +2,7 @@
 // See docs/SIMULATION.md for the documented assumptions. The game starts in January 2026
 // in a fictional timeline: you have just taken office.
 import type { CountryDef } from './types';
+import { X1_COUNTRIES } from './extra1';
 
 export const COUNTRIES: Record<string, CountryDef> = {
   nepal: {
@@ -222,7 +223,6 @@ export const COUNTRIES: Record<string, CountryDef> = {
   },
 };
 
-export const COUNTRY_LIST: CountryDef[] = Object.values(COUNTRIES);
 
 export const SPEND_LABELS: Record<string, string> = {
   education: 'Education',
@@ -246,3 +246,7 @@ export function administration0(c: CountryDef): number {
   const five = Object.values(c.spend0).reduce((a, b) => a + b, 0);
   return Math.round((total - five) * 10) / 10;
 }
+
+// Stage 4 additions
+Object.assign(COUNTRIES, X1_COUNTRIES);
+export const COUNTRY_LIST: CountryDef[] = Object.values(COUNTRIES);

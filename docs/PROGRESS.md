@@ -88,3 +88,10 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 
 ## Loading screen (build 13)
 - `src/ui/Splash.tsx`: start-up screen with logo, progress bar and status lines (~2.4 s, waits for fonts, tap to skip after ~35%). Doubles as the first real test of the in-app updater (build 12 -> 13).
+
+## Stage 4 (in progress)
+- Custom difficulty has 6 sliders; saves migrate with defaults.
+- Batch 1 countries (`src/engine/extra1.ts`, merged into the main tables with Object.assign): France, Italy, Pakistan, Bangladesh, South Africa, New Zealand. EU members (Germany, France, Italy) exclude the EU as a trade partner (`EU_MEMBERS` in diplomacy.ts).
+- `PartyDef.rivals` stops historic enemies from coalitioning together.
+- Update banner bug fixed: known updates are cached and re-checked on resume.
+- See docs/ROADMAP.md for the remaining Stage 4-6 checklist and the resume prompt.

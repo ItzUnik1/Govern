@@ -196,7 +196,7 @@ function allocateSeats(s: GameState, national: Record<string, number>, rnd: () =
 // ---------- Government formation ----------
 const MAX_DIST = 1.5;
 const isMisc = (p: PartyDef) => p.id.endsWith('_oth') || p.id === 'us_ind';
-const compatible = (a: PartyDef, b: PartyDef, maxD = MAX_DIST) => !a.pariah && !b.pariah && !isMisc(a) && !isMisc(b) && dist(a, b) <= maxD;
+const compatible = (a: PartyDef, b: PartyDef, maxD = MAX_DIST) => !a.pariah && !b.pariah && !a.rivals?.includes(b.id) && !b.rivals?.includes(a.id) && !isMisc(a) && !isMisc(b) && dist(a, b) <= maxD;
 
 function tryLeadD(sy: SystemDef, seats: Record<string, number>, leader: string, exclude: string[], maxD: number): string[] | null {
   const total = Object.values(seats).reduce((a, b) => a + b, 0);

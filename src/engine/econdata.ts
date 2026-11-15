@@ -11,6 +11,8 @@ export const SECTOR_LABELS: Record<SectorId, { label: string; icon: string; colo
   construction: { label: 'Construction', icon: '🏗️', color: '#b48cff' },
 };
 
+import { X1_ECO } from './extra1';
+
 export interface EcoDef {
   exports: number; // % of GDP
   imports: number; // % of GDP
@@ -32,3 +34,5 @@ export const ECODATA: Record<string, EcoDef> = {
   canada: { exports: 33, imports: 33, ca0: -1.0, fdi0: 2.0, reservesMonths: 3, gini0: 33, sectors: [2, 10, 2, 5, 8, 7] },
   australia: { exports: 24, imports: 22, ca0: -1.0, fdi0: 2.5, reservesMonths: 3, gini0: 34, sectors: [3, 6, 3, 4, 9, 7] },
 };
+
+Object.assign(ECODATA, X1_ECO);

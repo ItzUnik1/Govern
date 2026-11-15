@@ -19,11 +19,17 @@ export const isNative = () => Capacitor.isNativePlatform();
 export interface UpdateInfo { build: number; notes: string; url: string; size: number; published: string }
 
 const LAST = 'govern.updateCheck';
+const CACHE = 'govern.updateInfo';
 const stamp = () => { try { return Number(localStorage.getItem(LAST) ?? 0); } catch { return 0; } };
+const cached = (): UpdateInfo | null => {
+  try { const u = JSON.parse(localStorage.getItem(CACHE) ?? 'null') as UpdateInfo | null; return u && u.build > CURRENT_BUILD ? u : null; } catch { return null; }
+};
+const remember = (u: UpdateInfo | null) => { try { if (u) localStorage.setItem(CACHE, JSON.stringify(u)); else localStorage.removeItem(CACHE); } catch { /* ignore */ } };
 
 /** Returns the newer release, null if up to date, or throws if the check failed (offline etc.). */
 export async function checkForUpdate(force: boolean): Promise<UpdateInfo | null> {
-  if (!force && Date.now() - stamp() < 6 * 3600_000) return null;
+  // Recently checked: do not hit the network again, but still report an update we already know about.
+  if (!force && Date.now() - stamp() < 15 * 60_000) return cached();
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 8000);
   try {
@@ -34,12 +40,14 @@ export async function checkForUpdate(force: boolean): Promise<UpdateInfo | null>
     const m = /build-(\d+)/.exec(String(j.tag_name ?? ''));
     if (!m) return null;
     const build = Number(m[1]);
-    if (build <= CURRENT_BUILD) return null;
+    if (build <= CURRENT_BUILD) { remember(null); return null; }
     const assets: { name: string; browser_download_url: string; size: number }[] = j.assets ?? [];
     const a = assets.find((x) => x.name === 'GOVERN.apk') ?? assets.find((x) => x.name.endsWith('.apk'));
     if (!a) return null;
     const notes = String(j.body ?? '').split('\n---')[0].trim();
-    return { build, notes, url: a.browser_download_url, size: a.size, published: String(j.published_at ?? '') };
+    const info = { build, notes, url: a.browser_download_url, size: a.size, published: String(j.published_at ?? '') };
+    remember(info);
+    return info;
   } finally { clearTimeout(timer); }
 }
 

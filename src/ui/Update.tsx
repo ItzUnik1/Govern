@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CURRENT_BUILD, RELEASES_PAGE, checkForUpdate, downloadUpdate, installUpdate, isNative, type UpdateInfo } from '../update';
 
 type Status = 'idle' | 'checking' | 'available' | 'uptodate' | 'error' | 'downloading' | 'ready';
@@ -15,15 +15,29 @@ export function useUpdater(): Updater {
   const [pct, setPct] = useState(0);
   const [msg, setMsg] = useState('');
 
+  const busy = useRef(false);
   const check = useCallback((force: boolean) => {
-    setStatus('checking'); setMsg('');
+    if (busy.current) return;
+    busy.current = true;
+    if (force) { setStatus('checking'); setMsg(''); }
     checkForUpdate(force)
-      .then((u) => { if (u) { setInfo(u); setStatus('available'); } else setStatus(force ? 'uptodate' : 'idle'); })
-      .catch(() => { setStatus(force ? 'error' : 'idle'); setMsg('Could not reach the update server. Check your internet connection.'); });
+      .then((u) => {
+        if (u) { setInfo(u); setStatus((s) => (s === 'downloading' || s === 'ready' ? s : 'available')); }
+        else if (force) setStatus('uptodate');
+        else setStatus((s) => (s === 'available' ? 'idle' : s));
+      })
+      .catch(() => { if (force) { setStatus('error'); setMsg('Could not reach the update server. Check your internet connection.'); } })
+      .finally(() => { busy.current = false; });
   }, []);
 
-  // One quiet check shortly after launch. Offline or failing checks are silent.
-  useEffect(() => { const t = window.setTimeout(() => check(false), 2500); return () => window.clearTimeout(t); }, [check]);
+  // Quiet checks: shortly after launch and whenever the game comes back to the foreground.
+  // Offline or failing background checks are silent and never block play.
+  useEffect(() => {
+    const t = window.setTimeout(() => check(false), 2500);
+    const onVis = () => { if (document.visibilityState === 'visible') check(false); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { window.clearTimeout(t); document.removeEventListener('visibilitychange', onVis); };
+  }, [check]);
 
   const start = useCallback(() => {
     if (!info) return;

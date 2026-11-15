@@ -93,6 +93,8 @@ export default function Title({ onStart, onLoad }: { onStart: (s: GameState) => 
       ['stability', 'Political fragility', 'Lower starting stability, harsher unrest'],
       ['election', 'Election competitiveness', 'A stronger opposition raises the bar'],
       ['crisis', 'Crisis frequency', 'How often events strike'],
+      ['pressure', 'International pressure', 'Rivals, lenders and sanctions push harder'],
+      ['start', 'Starting conditions', 'A worse inheritance: more debt, inflation and joblessness'],
     ];
     return (
       <div className="page">

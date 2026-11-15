@@ -10,6 +10,8 @@ export interface Difficulty {
   stability: number; // 0.5..1.5  how fragile politics is
   election: number; // 0.5..1.5  how competitive the opposition is
   crisis: number; // 0.5..1.5  how often events fire
+  pressure: number; // 0.5..1.5  international pressure: rivals, lenders and sanctions
+  start: number; // 0.5..1.5  how bad the inherited national conditions are
 }
 
 export interface Modifier {

@@ -19,9 +19,9 @@ export const START_YEAR = 2026;
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const DIFFICULTY_PRESETS: Record<'relaxed' | 'standard' | 'hard', Difficulty> = {
-  relaxed: { preset: 'relaxed', economy: 0.7, stability: 0.7, election: 0.7, crisis: 0.7 },
-  standard: { preset: 'standard', economy: 1, stability: 1, election: 1, crisis: 1 },
-  hard: { preset: 'hard', economy: 1.3, stability: 1.3, election: 1.3, crisis: 1.4 },
+  relaxed: { preset: 'relaxed', economy: 0.7, stability: 0.7, election: 0.7, crisis: 0.7, pressure: 0.7, start: 0.8 },
+  standard: { preset: 'standard', economy: 1, stability: 1, election: 1, crisis: 1, pressure: 1, start: 1 },
+  hard: { preset: 'hard', economy: 1.3, stability: 1.3, election: 1.3, crisis: 1.4, pressure: 1.3, start: 1.2 },
 };
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
@@ -69,6 +69,10 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
     eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), res: initResearch(),
   };
+  // Starting national conditions: >1 means a worse inheritance (more debt, inflation, joblessness; weaker approval and confidence).
+  { const k = difficulty.start - 1;
+    s.debt *= 1 + 0.5 * k; s.inflation = Math.max(0.2, s.inflation + 2 * k); s.unemployment = Math.max(0.8, s.unemployment + 1.5 * k);
+    s.approval = clamp(s.approval - 8 * k, 10, 90); s.confidence = clamp(s.confidence - 10 * k, 10, 90); }
   s.pol = initPolitics(s, partyId, () => rngNext(s));
   s.dip.influence = influence(s);
   s.prevPolicy = policyVector(s);

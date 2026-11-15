@@ -16,7 +16,7 @@ const OUT = process.argv[2];
   await shot('01-title');
   await click('New career');
   must(await page.getByText('Nepal').first().isVisible(), 'country list shows Nepal');
-  must((await page.locator('.country-card').count()) === 8, '8 countries listed');
+  must((await page.locator('.country-card').count()) === 14, '14 countries listed');
   await shot('02-select');
   await page.locator('.country-card', { hasText: 'Germany' }).click();
   await shot('03-detail');

@@ -20,6 +20,7 @@ export interface PartyDef {
   protest?: number; // gains from discontent
   regions?: string[]; // regional party: only competes in these regions
   pariah?: boolean; // other parties refuse coalition with it
+  rivals?: string[]; // bitter enemies: these two never govern together
   blurb: string;
 }
 export interface RegionDef { id: string; name: string; seatShare: number; urban: number; cons: number }
@@ -216,3 +217,6 @@ export const POSTS: { id: string; label: string; icon: string }[] = [
   { id: 'welfare', label: 'Labour & Welfare', icon: '🤝' },
   { id: 'foreign', label: 'Foreign Affairs', icon: '🌐' },
 ];
+
+import { X1_SYSTEMS } from './extra1';
+Object.assign(SYSTEMS, X1_SYSTEMS);
