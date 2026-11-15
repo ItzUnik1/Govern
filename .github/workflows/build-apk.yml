@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    # The workflow commits download/GOVERN.apk itself; don't rebuild for that or for docs-only edits.
+    paths-ignore: ['download/**', 'README.md', 'docs/**']
 
 permissions:
   contents: write   # needed to publish the APK as a GitHub Release (a direct download link)
@@ -71,6 +73,8 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           mkdir -p out
           cp android/app/build/outputs/apk/debug/app-debug.apk "out/GOVERN-v${VERSION}-build${{ github.run_number }}-debug.apk"
+          # Fixed file name -> permanent link: releases/latest/download/GOVERN.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/GOVERN.apk
           ls -la out
 
       - uses: actions/upload-artifact@v4
@@ -86,5 +90,19 @@ jobs:
           body: |
             Debug-signed APK, installable on Android phones (allow "install unknown apps" for your browser).
             Built from commit ${{ github.sha }}.
-          prerelease: true
+          prerelease: false
+          make_latest: true
           files: out/*.apk
+
+      - name: Keep the newest APK in the repo (download/GOVERN.apk)
+        run: |
+          mkdir -p download
+          cp out/GOVERN.apk download/GOVERN.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add download/GOVERN.apk
+          if git diff --cached --quiet; then echo "APK unchanged"; else
+            git commit -m "Update download/GOVERN.apk (build ${{ github.run_number }}) [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
