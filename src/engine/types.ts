@@ -206,6 +206,17 @@ export interface PoliticsState {
   houseTilt: number;
 }
 
+export interface NationState { rel: number; trade: 0 | 1 | 2; negotiating: number; sanctionedByYou: boolean; sanctionsYou: boolean; ally: boolean }
+export interface LoanState { id: string; lender: string; amount: number; remaining: number; ratePct: number; monthsLeft: number }
+export interface DiploState {
+  nations: Record<string, NationState>;
+  orgs: Record<string, boolean>;
+  loans: LoanState[];
+  influence: number;
+  log: string[];
+}
+export interface ResearchState { budgetPct: number; progress: Record<string, number>; current: string | null; queue: string | null; done: string[] }
+
 export interface GameOver {
   kind: 'lost' | 'retired' | 'resigned';
   title: string;
@@ -276,6 +287,8 @@ export interface GameState {
   eco: EcoState;
   projects: ProjectState[];
   pol: PoliticsState;
+  dip: DiploState;
+  res: ResearchState;
 }
 
 export interface Fiscal {

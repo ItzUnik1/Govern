@@ -2,6 +2,8 @@
 // See docs/SIMULATION.md for the formulas explained in plain language.
 import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
+import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
+import { initResearch, researchCostPct, stepResearch } from './research';
 import { confirmFormation, declineFormation, fallOfGovernment, govSeatShare, initPolitics, isPresidential, ministerBonus, ministerMult, monthlyPolitics, ncRisk, oppositionDrift, pdef, runElection, settleGovernment, sysOf } from './politics';
 import { COUNTRIES, administration0 } from './countries';
 import { ACTIONS, PROGRAMS } from './programs';
@@ -11,7 +13,7 @@ import type {
   MonthReport, ReportDelta, SpendKey, StockKey, TaxKey,
 } from './types';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const START_YEAR = 2026;
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -64,9 +66,10 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'],
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), res: initResearch(),
   };
   s.pol = initPolitics(s, partyId, () => rngNext(s));
+  s.dip.influence = influence(s);
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);
   s.revenueM = f.revenueM; s.spendingM = f.spendingM; s.interestM = f.interestM;
@@ -141,7 +144,7 @@ export function fiscal(s: GameState): Fiscal {
   const extra = mod.revenuePct;
   const revenuePct = income + corp + vat + other + extra;
   const programSpend = Object.values(s.spend).reduce((a, b) => a + b, 0);
-  const progCost = programCostPct(s) + projectCostPct(s);
+  const progCost = programCostPct(s) + projectCostPct(s) + researchCostPct(s);
   const spendPct = programSpend + progCost;
   const interestAnnual = (s.debt * s.avgCost) / 100;
   const interestPct = (interestAnnual / s.gdp) * 100;
@@ -369,7 +372,9 @@ export function advanceMonth(input: GameState): GameState {
 
   // --- 6b. Construction projects and the wider economy (sectors, trade, FDI, reserves) ---
   const projLoad = stepProjects(s, c, rnd, notes);
-  const ex = stepEco(s, c, projLoad);
+  stepResearch(s, c, notes);
+  const dx = stepDiplomacy(s, rnd, notes);
+  const ex = stepEco(s, c, projLoad, dx);
   s.growth = clamp(s.growth + 0.35 * ex.growthAdj, -12, 12);
   s.confidence = clamp(s.confidence + ex.confAdj * 0.1, 0, 100);
 
@@ -423,7 +428,7 @@ export function advanceMonth(input: GameState): GameState {
     - 0.8 * Math.max(0, s.unemployment - c.unemployment0 - 1.5)
     - 0.6 * Math.max(0, -s.growth)
     + 0.08 * (st.security - st0.security) + 0.08 * (st.efficiency - st0.efficiency)
-    + mod2.stability + pe.stability + mb.stab;
+    + mod2.stability + pe.stability + mb.stab + dx.stab;
   s.stability = clamp(s.stability + 0.1 * (clamp(sTarget, 5, 98) - s.stability) + 0.3 * diff.stability * normal(rnd), 3, 98);
 
   // --- 12. Calendar, expiry ---

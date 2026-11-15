@@ -4,6 +4,7 @@
 import type { CountryDef, GameState, Modifier, SpendKey, StockKey, TaxKey } from './types';
 import { coalSeats, confidenceVote, fallOfGovernment, genMinister, pdef, sysOf, totalSeats } from './politics';
 import { POSTS } from './parties';
+import { getNation, rivalNation, topPartner } from './diplomacy';
 
 export interface Fx {
   s: GameState;
@@ -471,7 +472,7 @@ export const EVENTS: EventDef[] = [
   },
 ];
 
-const weakPartner = (s: GameState) => s.pol.coalition.filter((id) => id !== s.pol.pmParty).map((id) => ({ id, sat: s.pol.parties[id].sat })).sort((a, b) => a.sat - b.sat)[0];
+const weakPartner = (s: GameState) => s.pol.coalition.filter((id) => id !== s.pol.pmParty).map((id) => ({ id, sat: s.pol.parties[id].sat })).sort((a, b) => a.sat - b.sat)[0] ?? { id: s.pol.pmParty, sat: 100 };
 function worstMinister(s: GameState) {
   return Object.values(s.pol.cabinet).filter((m): m is NonNullable<typeof m> => !!m).sort((a, b) => a.comp - b.comp)[0];
 }
@@ -520,6 +521,60 @@ EVENTS.push(
   },
 );
 
+
+
+const nm = (id: string) => getNation(id)?.name ?? id;
+const bigPartner = (s: GameState) => topPartner(s);
+EVENTS.push(
+  {
+    id: 'borderIncident', title: 'Border incident', icon: '🚧', category: 'Diplomacy', cooldown: 24,
+    weight: (s) => (s.dip && s.pol.inGovernment && rivalNation(s) && s.dip.nations[rivalNation(s)!].rel < 42 ? 4 : 0),
+    text: (s) => `A confrontation with ${nm(rivalNation(s)!)} on the frontier has left soldiers injured. Newspapers demand a response, while diplomats urge calm.`,
+    choices: [
+      { label: 'Respond firmly', hint: 'Show strength: approval up, relations down, cost 0.1% GDP', run: (fx) => { const r = rivalNation(fx.s)!; fx.s.dip.nations[r].rel = Math.max(2, fx.s.dip.nations[r].rel - 8); fx.approval(2); fx.cost(0.1); fx.stability(-1); return 'Troops are reinforced. Rhetoric hardens.'; } },
+      { label: 'Negotiate quietly', hint: 'Relations recover; critics call you weak', run: (fx) => { const r = rivalNation(fx.s)!; fx.s.dip.nations[r].rel = Math.min(98, fx.s.dip.nations[r].rel + 5); fx.approval(-1.5); fx.stability(1); return 'A hotline is set up and the patrols pull back.'; } },
+      { label: 'Call on allies and the UN', hint: 'Slow, but wins sympathy', available: (s) => Object.values(s.dip.nations).some((n) => n.ally), run: (fx) => { fx.approval(0.5); fx.confidence(1); return 'Allies issue a joint statement. The tension eases.'; } },
+    ],
+  },
+  {
+    id: 'tradeWar', title: 'Trade war threat', icon: '📦', category: 'Diplomacy', cooldown: 30,
+    weight: (s) => (s.dip && s.dip.nations[bigPartner(s)] && s.dip.nations[bigPartner(s)].rel < 55 && s.pol.inGovernment ? 4 : 0),
+    text: (s) => `${nm(bigPartner(s))}, your biggest trading partner, threatens heavy tariffs on your exports unless you open your markets further.`,
+    choices: [
+      { label: 'Retaliate with tariffs', hint: 'Exports and imports both shrink for a while', run: (fx) => { fx.s.dip.nations[bigPartner(fx.s)].rel -= 8; fx.mod('Trade war losses', 12, { growth: -0.25 }); fx.s.eco.exportsPct -= 0.5; fx.approval(1); return 'A tit-for-tat tariff spiral begins.'; } },
+      { label: 'Offer concessions', hint: 'Cost 0.15% GDP; relations improve', run: (fx) => { fx.s.dip.nations[bigPartner(fx.s)].rel = Math.min(98, fx.s.dip.nations[bigPartner(fx.s)].rel + 8); fx.cost(0.15); fx.approval(-1); return 'A deal is struck; some of your industries grumble.'; } },
+      { label: 'File a WTO complaint', hint: 'Slow but principled', run: (fx) => { fx.confidence(1.5); fx.mod('Tariff uncertainty', 6, { growth: -0.1 }); return 'The case drags on; markets welcome your stance.'; } },
+    ],
+  },
+  {
+    id: 'sanctionsOnYou', title: 'Sanctions threat', icon: '⛔', category: 'Diplomacy', cooldown: 36,
+    weight: (s) => (s.dip && Object.keys(s.dip.nations).some((k) => s.dip.nations[k].rel < 28 && getNation(k).size > 4 && !s.dip.nations[k].sanctionsYou) && s.pol.inGovernment ? 3 : 0),
+    text: (s) => { const k = Object.keys(s.dip.nations).filter((x) => getNation(x).size > 4).sort((a, b) => s.dip.nations[a].rel - s.dip.nations[b].rel)[0]; return `${nm(k)} warns it will impose sanctions on your country over the deteriorating relationship.`; },
+    choices: [
+      { label: 'Appease', hint: 'Cost 0.2% GDP; relations recover', run: (fx) => { const k = Object.keys(fx.s.dip.nations).filter((x) => getNation(x).size > 4).sort((a, b) => fx.s.dip.nations[a].rel - fx.s.dip.nations[b].rel)[0]; fx.s.dip.nations[k].rel += 14; fx.cost(0.2); fx.approval(-1.5); return 'A face-saving package heads off the sanctions.'; } },
+      { label: 'Stand firm', hint: 'Sanctions may follow', run: (fx) => { const k = Object.keys(fx.s.dip.nations).filter((x) => getNation(x).size > 4).sort((a, b) => fx.s.dip.nations[a].rel - fx.s.dip.nations[b].rel)[0]; fx.approval(2); if (fx.rnd() < 0.6) { fx.s.dip.nations[k].sanctionsYou = true; fx.confidence(-3); return 'The sanctions are imposed. Exporters feel it.'; } return 'The threat fades; your defiance plays well at home.'; } },
+    ],
+  },
+  {
+    id: 'summitInvite', title: 'Summit invitation', icon: '🤝', category: 'Diplomacy', cooldown: 20,
+    weight: (s) => (s.dip && Object.values(s.dip.nations).some((n) => n.rel > 66) && s.pol.inGovernment ? 3 : 0),
+    text: (s) => { const k = Object.keys(s.dip.nations).sort((a, b) => s.dip.nations[b].rel - s.dip.nations[a].rel)[0]; return `${nm(k)} invites you to a state visit with business leaders in tow.`; },
+    choices: [
+      { label: 'Go with a business delegation', hint: 'Investment pledges; costs a little', run: (fx) => { const k = Object.keys(fx.s.dip.nations).sort((a, b) => fx.s.dip.nations[b].rel - fx.s.dip.nations[a].rel)[0]; fx.s.dip.nations[k].rel = Math.min(98, fx.s.dip.nations[k].rel + 7); fx.cost(0.03); fx.confidence(2); fx.approval(1); fx.s.eco.fdiPct += 0.2; return 'Deals worth billions are announced.'; } },
+      { label: 'Send the foreign minister', hint: 'Cheap, polite', run: (fx) => { fx.confidence(0.5); return 'The visit passes without incident.'; } },
+    ],
+  },
+  {
+    id: 'globalCrisis', title: 'Distant war shakes the world', icon: '🌍', category: 'Diplomacy', cooldown: 48,
+    weight: (s) => (s.dip && s.pol.inGovernment ? 1.2 : 0),
+    text: () => 'A war far away disrupts energy and grain markets. Great powers demand that countries pick sides, and prices are spiking.',
+    choices: [
+      { label: 'Join Western sanctions', hint: 'Western ties warm; Russia and China cool', run: (fx) => { ['usa', 'eu', 'uk', 'japan', 'canada', 'australia'].forEach((k) => { if (fx.s.dip.nations[k]) fx.s.dip.nations[k].rel = Math.min(98, fx.s.dip.nations[k].rel + 4); }); if (fx.s.dip.nations.russia) fx.s.dip.nations.russia.rel -= 10; fx.inflation(0.8); fx.mod('Energy price shock', 10, { growth: -0.2 }); return 'You stand with partners; energy bills climb.'; } },
+      { label: 'Stay neutral', hint: 'Keeps options open; prices still hurt', run: (fx) => { fx.inflation(0.5); fx.mod('Energy price shock', 8, { growth: -0.15 }); fx.confidence(-1); return 'Neither camp is delighted.'; } },
+      { label: 'Cushion households', hint: 'Cost 0.4% GDP; approval holds', run: (fx) => { fx.cost(0.4); fx.approval(1); fx.mod('Energy price shock', 6, { growth: -0.1 }); return 'Subsidies keep bills down - at a price.'; } },
+    ],
+  },
+);
 
 const BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
 export const getEvent = (id: string): EventDef | undefined => BY_ID.get(id);

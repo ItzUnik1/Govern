@@ -4,6 +4,7 @@ import { PROJ_CATS, availableProjects, cancelProject, eta, getProject, projectBu
 import { SECTOR_LABELS } from '../engine/econdata';
 import { Bar, Card, fmtMoney, fmtPct, Stat } from './common';
 import type { Ctx } from './ctx';
+import { BRANCHES, TECHS, eta as techEta, getTech, setBudget, startTech, techRate, techStatus } from '../engine/research';
 
 const BEN: Record<string, string> = { growth: 'Growth', unemployment: 'Jobs', confidence: 'Confidence', approval: 'Approval', stability: 'Stability', revenuePct: 'Revenue', inflation: 'Inflation' };
 const STK: Record<string, string> = { education: 'Education', health: 'Health', infrastructure: 'Infrastructure', security: 'Security', efficiency: 'Efficiency' };
@@ -24,7 +25,57 @@ const when = (s: { y: number; m: number }, add: number) => {
   return `${MONTHS[t % 12]} ${Math.floor(t / 12)}`;
 };
 
-export default function Build({ s, update, toast }: Ctx) {
+export default function Build(ctx: Ctx) {
+  const [mode, setMode] = useState<'projects' | 'research'>('projects');
+  return (
+    <>
+      <div className="chips">{([['projects', '🏗️ Projects'], ['research', '🔬 Research']] as const).map(([id, l]) => <button key={id} className={mode === id ? 'on' : ''} onClick={() => setMode(id)}>{l}</button>)}</div>
+      {mode === 'projects' ? <Projects {...ctx} /> : <Research {...ctx} />}
+    </>
+  );
+}
+
+function Research({ s, update, toast }: Ctx) {
+  const R = s.res;
+  const cur = R.current ? getTech(R.current) : null;
+  return (
+    <>
+      <Card title="R&D budget">
+        <div className="row between"><b>{R.budgetPct.toFixed(1)}% of GDP</b><span className="small muted">{fmtMoney((R.budgetPct / 100) * s.gdp)} / year</span></div>
+        <input type="range" min={0} max={3} step={0.1} value={R.budgetPct} style={{ width: '100%' }} onChange={(e) => { const v = parseFloat(e.target.value); update((g) => setBudget(g, v)); }} />
+        <div className="tiny muted">Funding turns into progress faster when your education quality is high. Anything above the 0.3% baseline widens the deficit (below it saves money).</div>
+      </Card>
+      {cur && (
+        <Card title="Researching now">
+          <b>{cur.icon} {cur.name}</b>
+          <div style={{ margin: '6px 0' }}><Bar value={R.progress[cur.id] ?? 0} tone="good" /></div>
+          <div className="row between small"><span>{(R.progress[cur.id] ?? 0).toFixed(0)}%</span><span className="muted">{techEta(s, cur.id) === null ? 'Needs funding' : `~${techEta(s, cur.id)} months`}</span></div>
+          {R.queue && <div className="tiny muted">Next: {getTech(R.queue)?.name}</div>}
+        </Card>
+      )}
+      {BRANCHES.map((br) => (
+        <div key={br}>
+          <div className="eyebrow" style={{ margin: '12px 2px 6px' }}>{br}</div>
+          {TECHS.filter((t) => t.branch === br).map((t) => {
+            const done = R.done.includes(t.id); const st = techStatus(s, t);
+            return (
+              <div className="card" key={t.id}>
+                <div className="row between"><b>{t.icon} {t.name}</b><span className="chip">{done ? 'Done' : `${t.costPct}% of GDP`}</span></div>
+                <div className="small muted">{t.desc}</div>
+                {!done && <button className="btn small" style={{ marginTop: 8, width: '100%' }} disabled={!st.ok || R.current === t.id || R.queue === t.id} onClick={() => update((g) => { const r = startTech(g, t.id); toast(r ?? (g.res.current === t.id ? 'Research started.' : 'Queued next.')); })}>{R.current === t.id ? 'In progress' : R.queue === t.id ? 'Queued' : st.ok ? (R.current ? 'Queue next' : 'Start research') : st.reason}</button>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      <div className="tiny muted">One technology at a time, with one queued. Each breakthrough permanently boosts growth, sectors, services or state capacity.</div>
+    </>
+  );
+}
+
+void techRate;
+
+function Projects({ s, update, toast }: Ctx) {
   const c = getCountry(s);
   const [tab, setTab] = useState<'active' | 'available' | 'done'>('active');
   const [confirm, setConfirm] = useState<string | null>(null);

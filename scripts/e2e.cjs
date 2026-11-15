@@ -26,7 +26,7 @@ const OUT = process.argv[2];
   await shot('04-overview');
 
   // navigate all tabs
-  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['Build', 'Construction slots'], ['Politics', 'Approval history'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
+  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Build', 'Construction slots'], ['Politics', 'Approval history'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
     await page.locator('.nav button', { hasText: label }).click();
     must(await page.getByText(check).first().isVisible(), `tab ${label} renders (${check})`);
   }

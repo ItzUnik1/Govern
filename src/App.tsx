@@ -3,6 +3,7 @@ import { saveAuto } from './engine/save';
 import { advanceMonth, dateLabel, getCountry, resolveEvent } from './engine/sim';
 import type { GameState } from './engine/types';
 import Build from './ui/Build';
+import World from './ui/World';
 import Economy from './ui/Economy';
 import Government from './ui/Government';
 import { Briefing, ElectionModal, EventModal, FormationModal, GameOver } from './ui/Modals';
@@ -19,6 +20,7 @@ const NAV: { id: Tab; ico: string; label: string }[] = [
   { id: 'economy', ico: '📈', label: 'Economy' },
   { id: 'government', ico: '🏛️', label: 'Govern' },
   { id: 'politics', ico: '🗳️', label: 'Politics' },
+  { id: 'world', ico: '🌐', label: 'World' },
   { id: 'build', ico: '🏗️', label: 'Build' },
   { id: 'more', ico: '☰', label: 'More' },
 ];
@@ -97,6 +99,7 @@ export default function App() {
         {tab === 'economy' && <Economy {...ctx} />}
         {tab === 'government' && <Government {...ctx} />}
         {tab === 'politics' && <Politics {...ctx} />}
+        {tab === 'world' && <World {...ctx} />}
         {tab === 'build' && <Build {...ctx} />}
         {tab === 'more' && <More {...ctx} onLoad={start} onQuit={() => { setGame(null); gameRef.current = null; }} />}
       </div>

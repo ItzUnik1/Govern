@@ -29,7 +29,7 @@ export function ensureEco(s: GameState, c: CountryDef): EcoState {
 }
 
 /** Steps the extended economy one month. Returns adjustments applied by sim.ts to currency / confidence. */
-export function stepEco(s: GameState, c: CountryDef, projectLoadPct: number): { fairAdj: number; confAdj: number; growthAdj: number } {
+export function stepEco(s: GameState, c: CountryDef, projectLoadPct: number, dip: { x: number; m: number; fdi: number; conf: number } = { x: 0, m: 0, fdi: 0, conf: 0 }): { fairAdj: number; confAdj: number; growthAdj: number } {
   const e = ensureEco(s, c);
   const d = ECODATA[c.id];
   const st = s.stocks, st0 = c.stock0;
@@ -62,8 +62,8 @@ export function stepEco(s: GameState, c: CountryDef, projectLoadPct: number): { 
 
   // ---- trade ----
   const manufRel = (e.sectors.manufacturing.share - ECODATA[c.id].sectors[1]) / Math.max(1, ECODATA[c.id].sectors[1]);
-  const xT = d.exports * (1 + 0.010 * (100 - s.currency) + 0.025 * c.openness * s.globalCycle + 0.45 * c.commodityExports * (s.commodity / 100 - 1) + 0.25 * manufRel + (s.programs.exportPush ? 0.05 : 0) - 0.04 * tariff) + e.exportBoost;
-  const mT = d.imports * (1 + 0.006 * (s.currency - 100) + 0.03 * (g - c.potentialGrowth) + 0.15 * c.fuelImports * (s.commodity / 100 - 1) - 0.03 * tariff);
+  const xT = d.exports * (1 + 0.010 * (100 - s.currency) + 0.025 * c.openness * s.globalCycle + 0.45 * c.commodityExports * (s.commodity / 100 - 1) + 0.25 * manufRel + (s.programs.exportPush ? 0.05 : 0) - 0.04 * tariff) + e.exportBoost + dip.x;
+  const mT = d.imports * (1 + 0.006 * (s.currency - 100) + 0.03 * (g - c.potentialGrowth) + 0.15 * c.fuelImports * (s.commodity / 100 - 1) - 0.03 * tariff) + dip.m;
   e.exportsPct += 0.08 * (xT - e.exportsPct);
   e.importsPct += 0.08 * (mT - e.importsPct);
 
@@ -71,7 +71,7 @@ export function stepEco(s: GameState, c: CountryDef, projectLoadPct: number): { 
   e.caPct = base;
 
   // ---- foreign direct investment ----
-  const fdiT = clamp(d.fdi0 * (1 + 0.05 * (s.confidence - 50) + 0.02 * (s.stability - c.stability0) - 0.04 * Math.max(0, dTax('corpTax')) + (s.programs.investHoliday ? 0.2 : 0)), 0, d.fdi0 * 3 + 0.5);
+  const fdiT = clamp(d.fdi0 * (1 + 0.05 * (s.confidence - 50) + 0.02 * (s.stability - c.stability0) - 0.04 * Math.max(0, dTax('corpTax')) + (s.programs.investHoliday ? 0.2 : 0)) + dip.fdi, 0, d.fdi0 * 3 + 0.5);
   e.fdiPct += 0.1 * (fdiT - e.fdiPct);
 
   // ---- reserves (months of imports): changes follow deviations of external balance from their starting values ----
@@ -87,7 +87,7 @@ export function stepEco(s: GameState, c: CountryDef, projectLoadPct: number): { 
 
   return {
     fairAdj: 0.4 * (e.caPct - d.ca0) + 0.6 * (e.fdiPct - d.fdi0) - 2.5 * short,
-    confAdj: -2 * short,
+    confAdj: -2 * short + dip.conf * 0.5,
     growthAdj: 0.15 * (e.fdiPct - d.fdi0),
   };
 }

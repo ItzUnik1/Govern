@@ -1,5 +1,7 @@
 import { initEco } from './economy';
 import { initPolitics } from './politics';
+import { initDiplo } from './diplomacy';
+import { initResearch } from './research';
 // Local save system: five manual slots + one autosave, all in localStorage (works offline in the Android WebView).
 import { COUNTRIES } from './countries';
 import { SAVE_VERSION, dateLabel } from './sim';
@@ -62,6 +64,8 @@ function migrate(s: GameState): GameState {
   if (!s.eco) s.eco = initEco(COUNTRIES[s.countryId]);
   s.projects = s.projects ?? [];
   if (!s.pol) { s.pol = initPolitics(s, undefined, Math.random); s.pol.tenure = s.electionsWon ?? 0; }
+  if (!s.dip) s.dip = initDiplo(s.countryId);
+  if (!s.res) s.res = initResearch();
   s.v = SAVE_VERSION;
   return s;
 }

@@ -60,3 +60,13 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 - Politics tab: Parliament / Laws / Cabinet (or Opposition) / Parties / Elections / Legacy.
 - Incumbent bonus is calibrated per country and party at game start so the opening position is a ~70% favourite. Probe (`scripts/polprobe.ts good`): a campaigning bot wins ~45-90% of elections depending on country/party.
 - Known limitations: Germany MMP is modelled as list PR; Australia preferences are simplified; ministers' effects are modest; coalition negotiation has fixed asking prices; no individual MPs.
+
+
+## Stage 3: Diplomacy, trade and research (done; debug APK, not device-tested)
+- `diplomacy.ts`: 12-13 nations per country with relations (drift back to a natural level unless supported), trade agreements (negotiation takes 8-12 months; success depends on relations), defence partnerships (rivals of your ally cool), sanctions both ways, aid given/requested, organisations (WTO, IMF, regional blocs, security pacts; join/leave), IMF / World Bank / Chinese loans with conditions and repayment, influence score.
+- Trade effects feed the Stage-1 economy model (exports, imports, FDI, confidence, stability) as deviations from the starting position, so starting balance is unchanged.
+- `research.ts`: R&D budget (0-3% of GDP; 0.3% baseline is free), 15 technologies in 5 branches, one at a time plus a queue, speed rises with education quality; breakthroughs add permanent growth/sector/service effects.
+- New events: border incident, trade war, sanctions threat, summit invitation, distant war.
+- UI: new World tab (Relations / Organisations / Loans & aid); Build tab now has Projects and Research; nav has 7 tabs.
+- Save version 3 (old saves migrate).
+- Known limitations: nations are generic blocs (no AI diplomacy between them); relations are one number per nation; no military conflict; loans' interest is modelled as budget payments.

@@ -69,8 +69,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 32px; marg
 .content > * + * { margin-top: 12px; }
 
 .nav { position: absolute; left: 0; right: 0; bottom: 0; display: flex; background: var(--panel); border-top: 1px solid var(--line); padding-bottom: var(--safe-b); z-index: 20; }
-.nav button { flex: 1; min-width: 0; background: none; padding: 8px 2px 7px; color: var(--muted); font-size: var(--fs-eyebrow); font-weight: 550; letter-spacing: 0.01em; display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.nav button .ico { font-size: 1.3125rem; line-height: 1.15; }
+.nav button { flex: 1; min-width: 0; background: none; padding: 8px 0 7px; color: var(--muted); font-size: 0.625rem; font-weight: 600; letter-spacing: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.nav button .ico { font-size: 1.15rem; line-height: 1.15; }
 .nav button.on { color: var(--accent); font-weight: 700; }
 
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; }
