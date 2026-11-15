@@ -8,6 +8,8 @@
 
 A political simulation for Android. Become Prime Minister (or President, or Chancellor), set taxes and budgets, run a parliament, win elections and transform your country over decades. Fully offline, no accounts, no ads.
 
+**[🌐 Website](https://itzunik1.github.io/Govern/)** · [Promotion kit](docs/PROMOTION.md)
+
 [![Download APK](https://img.shields.io/badge/⬇_Download-GOVERN.apk-2f6bea?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ItzUnik1/Govern/releases/latest/download/GOVERN.apk)
 
 [![Latest release](https://img.shields.io/github/v/release/ItzUnik1/Govern?style=flat-square&label=latest%20build)](https://github.com/ItzUnik1/Govern/releases/latest)
