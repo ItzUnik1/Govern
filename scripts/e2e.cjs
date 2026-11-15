@@ -12,7 +12,7 @@ const OUT = process.argv[2];
   const click = async (t, opt = {}) => { await page.getByText(t, { exact: opt.exact ?? false }).first().click(); };
   const must = (cond, msg) => { if (!cond) { errors.push('ASSERT: ' + msg); console.log('FAIL', msg); } else console.log('ok  ', msg); };
 
-  await page.goto('http://localhost:4173/');
+  await page.goto('http://localhost:4173/'); await page.waitForSelector('.title-screen', { timeout: 8000 });
   await shot('01-title');
   await click('New career');
   must(await page.getByText('Nepal').first().isVisible(), 'country list shows Nepal');
@@ -98,7 +98,7 @@ const OUT = process.argv[2];
     await page.locator('.card', { hasText: 'Slot 2' }).getByText('Save here').click();
     must(await page.locator('.card', { hasText: 'Slot 2' }).getByText('Overwrite').isVisible(), 'saved into slot 2');
     await shot('14-saveload');
-    await page.reload();
+    await page.reload(); await page.waitForSelector('.title-screen', { timeout: 8000 });
     await shot('15-after-reload');
     must(await page.getByText('Continue –').first().isVisible(), 'autosave offered after reload (persistence)');
     await click('Load game');

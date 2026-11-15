@@ -11,6 +11,7 @@ import Menu from './ui/Menu';
 import More from './ui/More';
 import Overview from './ui/Overview';
 import Politics from './ui/Politics';
+import Splash from './ui/Splash';
 import Title from './ui/Title';
 import { UpdateBanner, UpdateSheet, useUpdater } from './ui/Update';
 import type { Ctx, Tab } from './ui/ctx';
@@ -35,6 +36,7 @@ export default function App() {
   const [queue, setQueue] = useState<Modal[]>([]);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showLoad, setShowLoad] = useState(false);
+  const [booting, setBooting] = useState(true);
   const upd = useUpdater();
   const [showUpd, setShowUpd] = useState(false);
   const gameRef = useRef<GameState | null>(null);
@@ -83,6 +85,8 @@ export default function App() {
     }).catch(() => {});
     return () => remove?.();
   }, []);
+
+  if (booting) return <div className="app"><Splash onDone={() => setBooting(false)} /></div>;
 
   if (!game || showLoad) {
     return (

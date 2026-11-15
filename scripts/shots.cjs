@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
   const out = 'docs/screenshots';
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   const click = (t) => page.getByText(t, { exact: false }).first().click();
-  await page.goto('http://localhost:4173/');
+  await page.goto('http://localhost:4173/'); await page.waitForSelector('.title-screen', { timeout: 8000 });
   await shot('1-title');
   await click('New career');
   await shot('2-countries');

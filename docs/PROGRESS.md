@@ -85,3 +85,6 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 - Updates install over the old app only because every build uses the same committed debug keystore. Never change it.
 - Failures (offline, API errors) are silent on the automatic check. The release body (commit message) is shown as the changelog.
 - NOT yet verified on a real device: download and installer hand-off.
+
+## Loading screen (build 13)
+- `src/ui/Splash.tsx`: start-up screen with logo, progress bar and status lines (~2.4 s, waits for fonts, tap to skip after ~35%). Doubles as the first real test of the in-app updater (build 12 -> 13).
