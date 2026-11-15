@@ -153,3 +153,13 @@ ul.tight { margin: 4px 0 0; padding-left: 18px; } ul.tight li + li { margin-top:
 .about-list { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
 
 .chart text { fill: var(--muted); font-size: 12px; font-family: var(--font-ui); font-variant-numeric: tabular-nums; }
+
+/* Menu hub */
+.menu-card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.menu-card .mc-main { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; width: 100%; min-height: 96px; padding: 12px; cursor: pointer; }
+.menu-card .mc-ico { font-size: 1.6rem; line-height: 1.1; }
+.menu-card .mc-main b { font-size: var(--fs-body); font-weight: 650; }
+.menu-card .mc-pin { position: absolute; top: 4px; right: 4px; background: none; color: var(--muted); font-size: 1.15rem; width: 36px; height: 36px; padding: 0; }
+.menu-card .mc-pin.on { color: var(--warn); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.title-screen .logo { width: 220px; height: 220px; border-radius: 44px; box-shadow: 0 8px 30px rgba(0,0,0,.45); align-self: center; }

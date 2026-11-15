@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getCountry, MONTHS } from '../engine/sim';
-import { PROJ_CATS, availableProjects, cancelProject, eta, getProject, projectBudget, projectCapacity, projectCostPct, projectStatus, setProjectPaused, startProject, activeCount, type ProjectDef } from '../engine/projects';
+import { PROJ_CATS, availableProjects, cancelProject, eta, defOf, getProject, projectBudget, projectCapacity, projectCostPct, projectStatus, setProjectPaused, startProject, activeCount, type ProjectDef } from '../engine/projects';
 import { SECTOR_LABELS } from '../engine/econdata';
 import { Bar, Card, fmtMoney, fmtPct, Stat } from './common';
 import type { Ctx } from './ctx';
@@ -26,9 +26,10 @@ const when = (s: { y: number; m: number }, add: number) => {
 };
 
 export default function Build(ctx: Ctx) {
-  const [mode, setMode] = useState<'projects' | 'research'>('projects');
+  const [mode, setMode] = useState<'projects' | 'research'>(ctx.sub === 'research' ? 'research' : 'projects');
   return (
     <>
+      {!ctx.s.pol.inGovernment && <div className="card warn small">🔒 You are in opposition. Only the government can start, pause or cancel projects and set the research budget. Work already under way continues under the new government.</div>}
       <div className="chips">{([['projects', '🏗️ Projects'], ['research', '🔬 Research']] as const).map(([id, l]) => <button key={id} className={mode === id ? 'on' : ''} onClick={() => setMode(id)}>{l}</button>)}</div>
       {mode === 'projects' ? <Projects {...ctx} /> : <Research {...ctx} />}
     </>
@@ -42,7 +43,7 @@ function Research({ s, update, toast }: Ctx) {
     <>
       <Card title="R&D budget">
         <div className="row between"><b>{R.budgetPct.toFixed(1)}% of GDP</b><span className="small muted">{fmtMoney((R.budgetPct / 100) * s.gdp)} / year</span></div>
-        <input type="range" min={0} max={3} step={0.1} value={R.budgetPct} style={{ width: '100%' }} onChange={(e) => { const v = parseFloat(e.target.value); update((g) => setBudget(g, v)); }} />
+        <input type="range" min={0} max={3} step={0.1} value={R.budgetPct} disabled={!s.pol.inGovernment} style={{ width: '100%' }} onChange={(e) => { const v = parseFloat(e.target.value); update((g) => setBudget(g, v)); }} />
         <div className="tiny muted">Funding turns into progress faster when your education quality is high. Anything above the 0.3% baseline widens the deficit (below it saves money).</div>
       </Card>
       {cur && (
@@ -62,7 +63,7 @@ function Research({ s, update, toast }: Ctx) {
               <div className="card" key={t.id}>
                 <div className="row between"><b>{t.icon} {t.name}</b><span className="chip">{done ? 'Done' : `${t.costPct}% of GDP`}</span></div>
                 <div className="small muted">{t.desc}</div>
-                {!done && <button className="btn small" style={{ marginTop: 8, width: '100%' }} disabled={!st.ok || R.current === t.id || R.queue === t.id} onClick={() => update((g) => { const r = startTech(g, t.id); toast(r ?? (g.res.current === t.id ? 'Research started.' : 'Queued next.')); })}>{R.current === t.id ? 'In progress' : R.queue === t.id ? 'Queued' : st.ok ? (R.current ? 'Queue next' : 'Start research') : st.reason}</button>}
+                {!done && <button className="btn small" style={{ marginTop: 8, width: '100%' }} disabled={!s.pol.inGovernment || !st.ok || R.current === t.id || R.queue === t.id} onClick={() => update((g) => { const r = startTech(g, t.id); toast(r ?? (g.res.current === t.id ? 'Research started.' : 'Queued next.')); })}>{R.current === t.id ? 'In progress' : R.queue === t.id ? 'Queued' : st.ok ? (R.current ? 'Queue next' : 'Start research') : st.reason}</button>}
               </div>
             );
           })}
@@ -87,11 +88,11 @@ function Projects({ s, update, toast }: Ctx) {
 
   const start = (id: string) => update((g) => { const r = startProject(g, id); if (r) toast(r); else toast('Construction started'); });
   const Row = ({ id }: { id: string }) => {
-    const p = s.projects.find((x) => x.id === id)!; const d = getProject(id)!;
+    const p = s.projects.find((x) => x.id === id)!; const d = defOf(p)!;
     const cost = p.budget * (1 + p.overrunPct / 100);
     return (
       <div className="card">
-        <div className="row between"><b>{d.icon} {d.name}</b>
+        <div className="row between"><b>{d.icon} {d.name}{p.custom?.foreign ? ' 🌍' : ''}</b>
           <span className={`chip ${p.status === 'paused' ? 'warn' : ''}`}>{p.status === 'building' ? 'Building' : p.status === 'paused' ? 'Paused' : 'Complete'}</span></div>
         <div style={{ margin: '8px 0 4px' }}><Bar value={p.progress} tone={p.status === 'paused' ? 'warn' : 'good'} /></div>
         <div className="row between small"><span>{p.progress.toFixed(0)}% complete</span><span className="muted">{p.status === 'complete' ? `Finished ${when(s, (p.completedTurn ?? 0) - s.turn)}` : p.status === 'paused' ? 'On hold' : `Opens ~${when(s, eta(s, p))} (${eta(s, p)} mo)`}</span></div>
@@ -99,10 +100,10 @@ function Projects({ s, update, toast }: Ctx) {
         {(p.delayMonths > 0 || p.overrunPct > 0) && <div className="tiny warn" style={{ marginTop: 4 }}>⚠ {p.delayMonths > 0 ? `+${p.delayMonths} mo delay` : ''}{p.delayMonths > 0 && p.overrunPct > 0 ? ' · ' : ''}{p.overrunPct > 0 ? `+${p.overrunPct}% over budget` : ''}</div>}
         {p.status !== 'complete' && (
           <div className="row" style={{ marginTop: 8 }}>
-            <button className="btn sec small" style={{ flex: 1 }} onClick={() => update((g) => { const r = setProjectPaused(g, id, p.status === 'building'); if (r) toast(r); })}>{p.status === 'building' ? 'Pause' : 'Resume'}</button>
+            <button className="btn sec small" style={{ flex: 1 }} disabled={!s.pol.inGovernment} onClick={() => update((g) => { const r = setProjectPaused(g, id, p.status === 'building'); if (r) toast(r); })}>{p.status === 'building' ? 'Pause' : 'Resume'}</button>
             {confirm === id
               ? <button className="btn danger small" style={{ flex: 1 }} onClick={() => { setConfirm(null); update((g) => cancelProject(g, id)); }}>Confirm cancel</button>
-              : <button className="btn sec small" style={{ flex: 1 }} onClick={() => setConfirm(id)}>Cancel</button>}
+              : <button className="btn sec small" style={{ flex: 1 }} disabled={!s.pol.inGovernment} onClick={() => setConfirm(id)}>Cancel</button>}
           </div>
         )}
         {p.status === 'complete' && <div className="tiny muted" style={{ marginTop: 6 }}>Upkeep {fmtPct(d.maintenance, 2)} of GDP per year</div>}
@@ -143,7 +144,7 @@ function Projects({ s, update, toast }: Ctx) {
                     <div className="tiny muted" style={{ marginTop: 3 }}>{Math.round(d.months / 12 * 10) / 10} yrs · {fmtPct(d.costPct, 1)} of GDP · upkeep {fmtPct(d.maintenance, 2)}/yr</div>
                   </button>
                   {isOpen && <ul className="tight small" style={{ marginTop: 6 }}>{benefits(d).map((x, i) => <li key={i}>{x}</li>)}</ul>}
-                  <button className="btn small" style={{ marginTop: 8, width: '100%' }} disabled={!st.ok} onClick={() => start(d.id)}>{st.ok ? 'Start construction' : st.reason}</button>
+                  <button className="btn small" style={{ marginTop: 8, width: '100%' }} disabled={!st.ok || !s.pol.inGovernment} onClick={() => start(d.id)}>{!s.pol.inGovernment ? 'Government only' : st.ok ? 'Start construction' : st.reason}</button>
                 </div>
               );
             })}

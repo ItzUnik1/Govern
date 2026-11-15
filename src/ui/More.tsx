@@ -6,32 +6,12 @@ import { Card, Seg, Stars, fmtSigned } from './common';
 import type { Ctx } from './ctx';
 import { getTextSize, setTextSize, type TextSize } from './prefs';
 
-type Sub = 'menu' | 'history' | 'save' | 'brief' | 'help' | 'settings';
+type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings';
 
 export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: () => void }) {
-  const [sub, setSub] = useState<Sub>('menu');
-  if (sub === 'menu') {
-    const items: [Sub, string, string, string][] = [
-      ['history', '📜', 'History & reports', 'Monthly reports, events, active effects'],
-      ['save', '💾', 'Save / Load', 'Five manual slots plus autosave'],
-      ['brief', '🌐', 'Country briefing', 'Constitution, challenges and strengths'],
-      ['help', '❓', 'How the simulation works', 'Formulas in plain language'],
-      ['settings', '🔠', 'Settings', 'Text size'],
-    ];
-    return (
-      <>
-        {items.map(([id, ic, t, d]) => (
-          <button key={id} className="country-card" onClick={() => setSub(id)}>
-            <span className="fl">{ic}</span><div><b>{t}</b><div className="small muted">{d}</div></div>
-          </button>
-        ))}
-        <button className="btn sec" onClick={p.onQuit}>Quit to title screen</button>
-      </>
-    );
-  }
+  const sub = (p.sub as Sub) || 'history';
   return (
     <>
-      <button className="back" onClick={() => setSub('menu')}>‹ More</button>
       {sub === 'history' && <History {...p} />}
       {sub === 'save' && <SaveLoad {...p} />}
       {sub === 'brief' && <Brief {...p} />}

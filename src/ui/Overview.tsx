@@ -1,7 +1,7 @@
 import { advisories, dateLabel, debtPct, fiscal, MONTHS, getCountry } from '../engine/sim';
 import { getEvent } from '../engine/events';
 import { Bar, Card, Stat, fmtMoney, fmtPct, fmtSigned, stability_label, toneFor } from './common';
-import { getProject, eta } from '../engine/projects';
+import { defOf, eta } from '../engine/projects';
 import type { Ctx } from './ctx';
 
 export default function Overview({ s, advance, openEvent, openBriefing, go }: Ctx) {
@@ -43,7 +43,7 @@ export default function Overview({ s, advance, openEvent, openBriefing, go }: Ct
         <Card title="Major projects" right={<button className="btn sec small" onClick={() => go('build')}>Open</button>}>
           {s.projects.filter((p) => p.status !== 'complete').slice(0, 3).map((p) => (
             <div key={p.id} style={{ margin: '6px 0' }}>
-              <div className="row between small"><span>{getProject(p.id)?.icon} {getProject(p.id)?.name}</span><b>{p.progress.toFixed(0)}%</b></div>
+              <div className="row between small"><span>{defOf(p)?.icon} {defOf(p)?.name}</span><b>{p.progress.toFixed(0)}%</b></div>
               <Bar value={p.progress} tone={p.status === 'paused' ? 'warn' : 'good'} />
               <div className="tiny muted">{p.status === 'paused' ? 'Paused' : `~${eta(s, p)} months to go`}</div>
             </div>

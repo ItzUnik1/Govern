@@ -15,6 +15,7 @@ export default function World({ s, update, toast }: Ctx) {
   const nations = [...nationsOf(s)].sort((a, b) => w[b.id] - w[a.id]);
   return (
     <>
+      {!s.pol.inGovernment && <div className="card warn small">🔒 You are in opposition. Only the government can negotiate treaties, impose sanctions, take loans or give aid.</div>}
       <div className="grid2">
         <Stat label="Global influence" value={D.influence.toFixed(0)} sub="friendships and economic weight" />
         <Stat label="Trade partners" value={nations.filter((n) => D.nations[n.id].trade > 0).length} sub={`of ${nations.length} nations with deals`} />

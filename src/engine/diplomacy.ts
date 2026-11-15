@@ -149,12 +149,14 @@ const use = (s: GameState, k: string) => s.flags['use_' + k] ?? 0;
 const cooldown = (s: GameState, k: string, add: number, lim: number): boolean => { if (use(s, k) > lim) return false; s.flags['use_' + k] = use(s, k) + add; return true; };
 
 export function delegation(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id]; if (!n) return 'Unknown';
   if (!cooldown(s, 'dele_' + id, 1.5, 0.9)) return 'You sent a delegation recently. Give it a few months.';
   s.pendingCosts += 0.0002 * s.gdp; n.rel = clamp(n.rel + 4, 0, 98);
   return `Delegation to ${getNation(id).name}: relations improve (+4).`;
 }
 export function summit(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id];
   if (n.rel < 50) return 'They are not ready for a summit (relations below 50).';
   if (!cooldown(s, 'summit_' + id, 6, 5)) return 'A summit was held recently.';
@@ -162,6 +164,7 @@ export function summit(s: GameState, id: string): string | null {
   return `Summit with ${getNation(id).name}: a warm photo-op (+8).`;
 }
 export function negotiateTrade(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id];
   if (n.negotiating > 0) return 'Talks already under way.';
   if (n.trade >= 2) return 'Already a deep agreement.';
@@ -172,11 +175,13 @@ export function negotiateTrade(s: GameState, id: string): string | null {
   return `Trade talks with ${getNation(id).name} begin (${n.negotiating} months).`;
 }
 export function cancelTrade(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id]; if (n.trade === 0 && !n.negotiating) return 'Nothing to cancel.';
   n.trade = 0; n.negotiating = 0; n.rel = clamp(n.rel - 10, 0, 98); s.stability = clamp(s.stability - 1, 3, 98);
   return 'Agreement cancelled. Relations suffer.';
 }
 export function sanction(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id];
   if (n.sanctionedByYou) { n.sanctionedByYou = false; n.rel = clamp(n.rel + 5, 0, 98); return 'Sanctions lifted.'; }
   n.sanctionedByYou = true; n.rel = clamp(n.rel - 15, 0, 98);
@@ -186,6 +191,7 @@ export function sanction(s: GameState, id: string): string | null {
   return `You impose sanctions on ${getNation(id).name}. Trade with them shrinks.`;
 }
 export function ally(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id];
   if (n.ally) { n.ally = false; n.rel = clamp(n.rel - 6, 0, 98); return 'Defence cooperation ended.'; }
   if (n.rel < 70) return 'Need relations of 70+ for a defence partnership.';
@@ -193,6 +199,7 @@ export function ally(s: GameState, id: string): string | null {
   return `Defence partnership with ${getNation(id).name}: stability up; their rivals will cool toward you.`;
 }
 export function joinOrg(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const o = ORGS[s.countryId].find((x) => x.id === id)!;
   if (o.kind === 'global') return 'Permanent membership.';
   if (s.dip.orgs[id]) {
@@ -211,6 +218,7 @@ export const LENDERS = [
   { id: 'china', name: 'Chinese bank loan', rate: 4.5, months: 96, rel: 'china', cond: 'Quick and condition-free, but costs more and irritates China’s rivals.', min: 45 },
 ];
 export function takeLoan(s: GameState, lenderId: string, pctGdp: number): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const L = LENDERS.find((l) => l.id === lenderId)!;
   if (L.rel && (s.dip.nations[L.rel]?.rel ?? 0) < L.min) return `Relations with ${getNation(L.rel).name} must be ${L.min}+.`;
   if (s.dip.loans.some((l) => l.lender === lenderId)) return 'You already have one of these loans.';
@@ -226,6 +234,7 @@ export function takeLoan(s: GameState, lenderId: string, pctGdp: number): string
 }
 function applyBonus(s: GameState) { s.eco.assetBonus.infrastructure = Math.min(60, s.eco.assetBonus.infrastructure + 2); s.eco.assetBonus.education = Math.min(60, s.eco.assetBonus.education + 1.5); }
 export function repayLoan(s: GameState, lenderId: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const l = s.dip.loans.find((x) => x.lender === lenderId); if (!l) return 'No such loan.';
   if (s.debt <= 0) return 'Nothing to repay.';
   s.pendingCosts += l.remaining; s.debt = Math.max(0, s.debt - l.remaining);
@@ -233,6 +242,7 @@ export function repayLoan(s: GameState, lenderId: string): string | null {
   return 'Loan repaid in full from the budget.';
 }
 export function requestAid(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id]; const nat = getNation(id);
   const gdppc = (s.gdp * 1000) / s.population;
   if (!nat.rich && id !== 'china') return 'They are not a donor.';
@@ -243,6 +253,7 @@ export function requestAid(s: GameState, id: string): string | null {
   return `${nat.name} grants development aid (+0.4% of GDP).`;
 }
 export function giveAid(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const n = s.dip.nations[id];
   if (!cooldown(s, 'give_' + id, 12, 11)) return 'You gave aid recently.';
   s.pendingCosts += 0.0015 * s.gdp; n.rel = clamp(n.rel + 7, 0, 98); s.approval = clamp(s.approval - 0.3, 3, 95);

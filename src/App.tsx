@@ -7,6 +7,7 @@ import World from './ui/World';
 import Economy from './ui/Economy';
 import Government from './ui/Government';
 import { Briefing, ElectionModal, EventModal, FormationModal, GameOver } from './ui/Modals';
+import Menu from './ui/Menu';
 import More from './ui/More';
 import Overview from './ui/Overview';
 import Politics from './ui/Politics';
@@ -16,18 +17,20 @@ import { fmtPct } from './ui/common';
 
 type Modal = 'briefing' | 'election' | 'formation' | 'event';
 const NAV: { id: Tab; ico: string; label: string }[] = [
-  { id: 'overview', ico: '🏠', label: 'Overview' },
+  { id: 'overview', ico: '🏠', label: 'Home' },
   { id: 'economy', ico: '📈', label: 'Economy' },
   { id: 'government', ico: '🏛️', label: 'Govern' },
-  { id: 'politics', ico: '🗳️', label: 'Politics' },
   { id: 'world', ico: '🌐', label: 'World' },
-  { id: 'build', ico: '🏗️', label: 'Build' },
-  { id: 'more', ico: '☰', label: 'More' },
+  { id: 'menu', ico: '☰', label: 'Menu' },
 ];
+/** Screens opened from the Menu hub; the Menu tab stays highlighted and a back link returns to it. */
+const MENU_PAGES: Tab[] = ['politics', 'build', 'more'];
 
 export default function App() {
   const [game, setGame] = useState<GameState | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
+  const [sub, setSub] = useState<string | undefined>(undefined);
+  const goTo = useCallback((t: Tab, s2?: string) => { setSub(s2); setTab(t); }, []);
   const [queue, setQueue] = useState<Modal[]>([]);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showLoad, setShowLoad] = useState(false);
@@ -43,7 +46,7 @@ export default function App() {
     gameRef.current = next; setGame(next);
   }, []);
 
-  const start = (s: GameState) => { setGame(s); gameRef.current = s; setTab('overview'); setQueue(s.pol?.pending ? ['formation'] : []); setShowLoad(false); saveAuto(s); };
+  const start = (s: GameState) => { setGame(s); gameRef.current = s; goTo('overview'); setQueue(s.pol?.pending ? ['formation'] : []); setShowLoad(false); saveAuto(s); };
 
   const advance = useCallback(() => {
     const cur = gameRef.current; if (!cur || cur.pendingEvent || cur.gameOver || cur.pol.pending) return;
@@ -60,7 +63,7 @@ export default function App() {
   const closeModal = () => setQueue((q) => q.slice(1));
   const chooseEvent = (i: number) => { update((s) => { resolveEvent(s, i); }); const g = gameRef.current; if (g) saveAuto(g); };
 
-  useEffect(() => { contentRef.current?.scrollTo({ top: 0 }); }, [tab]);
+  useEffect(() => { contentRef.current?.scrollTo({ top: 0 }); }, [tab, sub]);
 
   // Android hardware back button: go to Overview, then minimise.
   useEffect(() => {
@@ -68,7 +71,11 @@ export default function App() {
     import('@capacitor/app').then(({ App: CapApp }) => {
       CapApp.addListener('backButton', () => {
         if (!gameRef.current) { CapApp.minimizeApp(); return; }
-        setTab((t) => { if (t !== 'overview') return 'overview'; CapApp.minimizeApp(); return t; });
+        setTab((t) => {
+          if (MENU_PAGES.includes(t)) return 'menu';
+          if (t !== 'overview') return 'overview';
+          CapApp.minimizeApp(); return t;
+        });
       }).then((h) => { remove = () => h.remove(); }).catch(() => {});
     }).catch(() => {});
     return () => remove?.();
@@ -80,10 +87,11 @@ export default function App() {
 
   const c = getCountry(game);
   const ctx: Ctx = {
-    s: game, update, toast, go: setTab, advance,
+    s: game, update, toast, go: goTo, sub, advance,
     openEvent: () => setQueue(['event']),
     openBriefing: () => setQueue(['briefing']),
   };
+  const quit = () => { setGame(null); gameRef.current = null; };
   const top = queue[0];
   const showOver = !!game.gameOver && queue.length === 0;
 
@@ -98,14 +106,16 @@ export default function App() {
         {tab === 'overview' && <Overview {...ctx} />}
         {tab === 'economy' && <Economy {...ctx} />}
         {tab === 'government' && <Government {...ctx} />}
-        {tab === 'politics' && <Politics {...ctx} />}
+        {MENU_PAGES.includes(tab) && <button className="back" onClick={() => goTo('menu')}>‹ Menu</button>}
+        {tab === 'politics' && <Politics key={sub} {...ctx} />}
         {tab === 'world' && <World {...ctx} />}
-        {tab === 'build' && <Build {...ctx} />}
-        {tab === 'more' && <More {...ctx} onLoad={start} onQuit={() => { setGame(null); gameRef.current = null; }} />}
+        {tab === 'build' && <Build key={sub} {...ctx} />}
+        {tab === 'more' && <More key={sub} {...ctx} onLoad={start} onQuit={quit} />}
+        {tab === 'menu' && <Menu {...ctx} onQuit={quit} />}
       </div>
       <div className="nav">
         {NAV.map((n) => (
-          <button key={n.id} className={tab === n.id ? 'on' : ''} onClick={() => setTab(n.id)}><span className="ico">{n.ico}</span>{n.label}</button>
+          <button key={n.id} className={tab === n.id || (n.id === 'menu' && MENU_PAGES.includes(tab)) ? 'on' : ''} onClick={() => goTo(n.id)}><span className="ico">{n.ico}</span>{n.label}</button>
         ))}
       </div>
       {toastMsg && <div className="toast">{toastMsg}</div>}

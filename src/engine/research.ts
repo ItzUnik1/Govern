@@ -50,8 +50,9 @@ export function eta(s: GameState, id: string): number | null {
   if (r <= 0.001) return null;
   return Math.ceil((100 - (s.res.progress[id] ?? 0)) / r);
 }
-export function setBudget(s: GameState, v: number) { s.res.budgetPct = Math.round(Math.min(3, Math.max(0, v)) * 10) / 10; }
+export function setBudget(s: GameState, v: number) { if (!s.pol.inGovernment) return; s.res.budgetPct = Math.round(Math.min(3, Math.max(0, v)) * 10) / 10; }
 export function startTech(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return 'Only the government can do this - you are in opposition.';
   const t = getTech(id); if (!t) return 'Unknown';
   const st = techStatus(s, t); if (!st.ok) return st.reason ?? 'Unavailable';
   if (!s.res.current) s.res.current = id; else s.res.queue = id;

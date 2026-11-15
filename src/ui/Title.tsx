@@ -17,14 +17,15 @@ export default function Title({ onStart, onLoad }: { onStart: (s: GameState) => 
   if (step === 'title') {
     return (
       <div className="title-screen">
-        <h1>GOVERN</h1>
+        <img className="logo" src="/logo.png" alt="GOVERN – Political Simulation" width={220} height={220} />
+        <h1 className="sr">GOVERN</h1>
         <p className="muted">Lead a nation. Make hard choices. Build a legacy.</p>
         <button className="btn big" onClick={() => setStep('select')}>New career</button>
         <button className="btn sec big" disabled={auto.empty || auto.corrupt} onClick={() => { const g = loadSlot('auto'); if (g) onLoad(g); }}>
           {auto.empty ? 'Continue (no autosave yet)' : `Continue – ${auto.flag} ${auto.country}, ${auto.date}`}
         </button>
         <button className="btn sec big" onClick={() => setStep('load')}>Load game</button>
-        <p className="tiny muted">Stage 1 · works fully offline</p>
+        <p className="tiny muted">Works fully offline</p>
       </div>
     );
   }

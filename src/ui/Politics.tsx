@@ -34,7 +34,7 @@ const rnd = (s: GameState) => rngNext(s);
 export default function Politics(ctx: Ctx) {
   const { s } = ctx;
   const inGov = s.pol.inGovernment;
-  const [seg, setSeg] = useState<SegId>('parliament');
+  const [seg, setSeg] = useState<SegId>((ctx.sub as SegId) || 'parliament');
   const opts: [SegId, string][] = inGov
     ? [['parliament', 'Parliament'], ['laws', 'Laws'], ['cabinet', 'Cabinet'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']]
     : [['parliament', 'Parliament'], ['opposition', 'Opposition'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']];

@@ -1,0 +1,12 @@
+import { newGame, DIFFICULTY_PRESETS } from '../src/engine/sim';
+import { startProject, startEventProject, activeCount, projectStatus, getProject, setProjectPaused } from '../src/engine/projects';
+import { startTech } from '../src/engine/research';
+import { negotiateTrade } from '../src/engine/diplomacy';
+const s = newGame('germany', DIFFICULTY_PRESETS.standard, 7, undefined as never);
+const before = activeCount(s);
+startEventProject(s, { key: 'factory', name: 'Foreign factory', icon: '🏭', desc: '', months: 30, foreign: true, mod: { growth: 0.2 } });
+console.log('event project counts toward slots:', activeCount(s) === before + 1);
+while (activeCount(s) < 20) startEventProject(s, { key: 'x' + activeCount(s), name: 'f', icon: '', desc: '', months: 12, foreign: true });
+console.log('capacity blocks new govt projects:', !projectStatus(s, getProject('highways')!).ok);
+s.pol.inGovernment = false;
+console.log('opposition blocks:', startProject(s, 'ruralRoads'), '|', setProjectPaused(s, s.projects[0].id, true), '|', startTech(s, s.res.current ?? 'x'), '|', negotiateTrade(s, Object.keys(s.dip.nations)[0]));

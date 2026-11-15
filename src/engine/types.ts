@@ -48,6 +48,8 @@ export interface ProjectState {
   monthlySpend: number; // USD bn at the current pace
   completedTurn: number | null;
   log: string[];
+  /** Set for projects created by events (e.g. foreign-built factories); not in the PROJECTS catalogue. */
+  custom?: { name: string; icon: string; desc: string; maintenance: number; foreign: boolean; asset?: Partial<Record<StockKey, number>>; mod?: Record<string, number>; exportBoost?: number; sector?: Record<string, number> };
 }
 
 export interface CountryDef {

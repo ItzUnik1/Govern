@@ -26,10 +26,16 @@ const OUT = process.argv[2];
   await shot('04-overview');
 
   // navigate all tabs
-  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Build', 'Construction slots'], ['Politics', 'Approval history'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
-    await page.locator('.nav button', { hasText: label }).click();
-    must(await page.getByText(check).first().isVisible(), `tab ${label} renders (${check})`);
+  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Menu:Projects', 'Construction slots'], ['Menu:Parliament', 'Approval history'], ['Menu:Laws & bills', 'Laws'], ['Menu:Cabinet', 'Cabinet'], ['Menu:Research', 'R&D budget'], ['Menu:Save / Load', 'Slot 1'], ['Menu:History & reports', 'Month'], ['Menu:Settings', 'Text size'], ['Home', 'Advance to']]) {
+    if (label.startsWith('Menu:')) {
+      await page.locator('.nav button', { hasText: 'Menu' }).click();
+      await page.locator('.menu-card .mc-main', { hasText: label.slice(5) }).first().click();
+    } else await page.locator('.nav button', { hasText: label }).click();
+    must(await page.getByText(check).first().isVisible(), `screen ${label} renders (${check})`);
   }
+  // back link returns to the menu and the pinned row works
+  await page.locator('.nav button', { hasText: 'Menu' }).click();
+  must(await page.getByText('Pinned').first().isVisible(), 'menu shows pinned row');
   await page.locator('.nav button', { hasText: 'Economy' }).click();
   await click('Trends'); await shot('05-trends-empty');
   await click('Public finances'); await shot('06-finances');
@@ -47,7 +53,7 @@ const OUT = process.argv[2];
   await click('Do it'); 
 
   // play 30 months, resolving events
-  await page.locator('.nav button', { hasText: 'Overview' }).click();
+  await page.locator('.nav button', { hasText: 'Home' }).click();
   let months = 0, events = 0, elections = 0;
   for (let i = 0; i < 60; i++) {
     const adv = page.locator('.advance .btn');
@@ -85,10 +91,10 @@ const OUT = process.argv[2];
 
   // save / load / delete
   if (!(await page.getByText('Take office').count()) && !(await page.getByText('New career').count())) {
-    await page.locator('.nav button', { hasText: 'Overview' }).click();
+    await page.locator('.nav button', { hasText: 'Home' }).click();
     const dateBefore = await page.locator('.topbar .t2').innerText();
-    await page.locator('.nav button', { hasText: 'More' }).click();
-    await click('Save / Load');
+    await page.locator('.nav button', { hasText: 'Menu' }).click();
+    await page.locator('.menu-card .mc-main', { hasText: 'Save / Load' }).click();
     await page.locator('.card', { hasText: 'Slot 2' }).getByText('Save here').click();
     must(await page.locator('.card', { hasText: 'Slot 2' }).getByText('Overwrite').isVisible(), 'saved into slot 2');
     await shot('14-saveload');
@@ -98,7 +104,7 @@ const OUT = process.argv[2];
     await click('Load game');
     await page.locator('.country-card', { hasText: 'Slot 2' }).click();
     must((await page.locator('.topbar .t2').innerText()) === dateBefore, 'loaded slot restores date ' + dateBefore);
-    await page.locator('.nav button', { hasText: 'More' }).click(); await click('Save / Load');
+    await page.locator('.nav button', { hasText: 'Menu' }).click(); await page.locator('.menu-card .mc-main', { hasText: 'Save / Load' }).click();
     await page.locator('.card', { hasText: 'Slot 2' }).getByText('Delete').click();
     await shot('16-confirm-delete');
     await page.locator('.sheet .btn', { hasText: 'Confirm' }).click();

@@ -1,5 +1,6 @@
 // GOVERN simulation engine. Pure TypeScript, no UI/DOM dependencies (runs headless in Node for tests).
 // See docs/SIMULATION.md for the formulas explained in plain language.
+import { startEventProject } from './projects';
 import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
 import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
@@ -225,6 +226,7 @@ function makeFx(s: GameState, c: CountryDef, rnd: () => number): Fx {
     tax: (k, d) => { s.tax[k] = round(clamp(s.tax[k] + d, 0, 80), 2); },
     stock: (k, d) => { s.stocks[k] = clamp(s.stocks[k] + d, 0, 100); },
     flag: (k, v) => { s.flags[k] = v; },
+    project: (spec) => startEventProject(s, spec),
   };
 }
 

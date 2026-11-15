@@ -4,6 +4,7 @@
 import type { CountryDef, GameState, Modifier, SpendKey, StockKey, TaxKey } from './types';
 import { coalSeats, confidenceVote, fallOfGovernment, genMinister, pdef, sysOf, totalSeats } from './politics';
 import { POSTS } from './parties';
+import { startEventProject, type EventProjectSpec } from './projects';
 import { getNation, rivalNation, topPartner } from './diplomacy';
 
 export interface Fx {
@@ -23,6 +24,8 @@ export interface Fx {
   tax(k: TaxKey, d: number): void;
   stock(k: StockKey, d: number): void;
   flag(k: string, v: number): void;
+  /** Start a construction project that occupies one of the country's construction slots. */
+  project(spec: EventProjectSpec): void;
 }
 
 export interface ChoiceDef {
@@ -158,9 +161,9 @@ export const EVENTS: EventDef[] = [
     weight: (s) => (s.confidence > 45 ? 0.7 : 0.2),
     text: (_s, c) => `A global manufacturer is ready to build a major plant in ${c.name} – if you grant sweeping tax breaks.`,
     choices: [
-      { label: 'Accept generous breaks', hint: 'Jobs now, revenue later', run: (fx) => { fx.mod('Factory investment', 36, { growth: 0.25, revenuePct: -0.1 }); fx.mod('Investor signal', 24, { confidence: 2 }); fx.approval(1); return 'Construction starts. Local leaders celebrate; the treasury grumbles.'; } },
+      { label: 'Accept generous breaks', hint: 'Jobs now, revenue later', run: (fx) => { fx.project({ key: 'factory', name: 'Foreign-owned factory complex', icon: '🏭', desc: 'A multinational builds a major plant under sweeping tax breaks.', months: 30, foreign: true, mod: { growth: 0.22, unemployment: -0.1, revenuePct: -0.05 }, exportBoost: 0.4, sector: { manufacturing: 0.5 } }); fx.mod('Investor signal', 24, { confidence: 2 }); fx.approval(1); return 'Construction starts (it takes a construction slot). Local leaders celebrate; the treasury grumbles.'; } },
       { label: 'Demand local-content rules', hint: 'They might walk away', run: (fx) => {
-          if (fx.rnd() < 0.5) { fx.mod('Local-content factory', 36, { growth: 0.15 }); fx.approval(1); return 'They agree to tougher terms. Good deal.'; }
+          if (fx.rnd() < 0.5) { fx.project({ key: 'factory', name: 'Local-content factory', icon: '🏭', desc: 'A multinational builds a plant sourcing parts from local suppliers.', months: 36, foreign: true, mod: { growth: 0.18, unemployment: -0.1 }, exportBoost: 0.3, sector: { manufacturing: 0.4 } }); fx.approval(1); return 'They agree to tougher terms and construction starts. Good deal.'; }
           fx.approval(-0.5); return 'The firm walks away and builds in a neighbouring country.';
         } },
       { label: 'Decline', hint: 'Protects revenue and pride', run: (fx) => { fx.stability(0.5); fx.confidence(-1); return 'You decline. Nationalists applaud; business groups are unimpressed.'; } },
@@ -263,7 +266,7 @@ export const EVENTS: EventDef[] = [
     weight: (_s, c) => (isC(c, 'usa', 'india', 'uk', 'germany', 'japan', 'canada') ? 0.5 : 0.15),
     text: () => 'A wave of start-ups and AI investment is sweeping in. Industry asks how the government will respond.',
     choices: [
-      { label: 'Build a national tech hub', hint: 'Investment pays off over years', run: (fx) => { fx.cost(0.6); fx.mod('Tech hub', 36, { growth: 0.3 }); fx.mod('Tech confidence', 24, { confidence: 3 }); fx.stock('education', 1); fx.approval(1); return 'A flagship campus opens, drawing talent and capital.'; } },
+      { label: 'Build a national tech hub', hint: 'Investment pays off over years', run: (fx) => { fx.project({ key: 'techhub', name: 'National tech hub', icon: '💡', desc: 'A flagship campus for start-ups and AI labs.', months: 24, foreign: false, costPct: 0.6, maintenance: 0.04, asset: { education: 1 }, mod: { growth: 0.2 }, sector: { technology: 0.6 } }); fx.mod('Tech confidence', 24, { confidence: 3 }); fx.approval(1); return 'Work starts on a flagship campus to draw talent and capital.'; } },
       { label: 'Light-touch approach', hint: 'Let the market lead', run: (fx) => { fx.mod('Tech tailwind', 24, { growth: 0.15 }); return 'The sector grows organically.'; } },
       { label: 'Strict regulation', hint: 'Public trust vs. innovation', run: (fx) => { fx.mod('Regulatory drag', 12, { growth: -0.1 }); fx.stability(1); fx.approval(1); return 'The public likes the safeguards; start-ups grumble.'; } },
     ],
@@ -369,8 +372,8 @@ export const EVENTS: EventDef[] = [
     weight: (s) => (s.confidence > 45 ? 0.5 : 0.1),
     text: (_s, c) => (c.id === 'nepal' ? 'Engineers propose a major hydropower dam and export transmission line.' : 'Planners propose a landmark high-speed rail and bridge project.'),
     choices: [
-      { label: 'Fund it fully', hint: 'Big cost; big payoff over time', run: (fx) => { fx.cost(1.2); fx.stock('infrastructure', 4); fx.mod('Construction activity', 24, { growth: 0.2 }); fx.approval(2); return 'Construction begins to fanfare.'; } },
-      { label: 'Foreign-financed partnership', hint: 'Cheaper, but you share the profits', run: (fx) => { fx.cost(0.3); fx.stock('infrastructure', 2.5); fx.mod('Concession payments', 120, { revenuePct: -0.1 }); fx.approval(1); return 'A foreign partner will build and operate it.'; } },
+      { label: 'Fund it fully', hint: 'Big cost; big payoff over time', run: (fx) => { fx.project({ key: 'landmark', name: fx.c.id === 'nepal' ? 'Landmark dam & transmission line' : 'Landmark rail & bridge project', icon: '🏗️', desc: 'A flagship national project proposed by planners.', months: 36, foreign: false, costPct: 1.2, maintenance: 0.06, asset: { infrastructure: 4 }, mod: { growth: 0.1 } }); fx.approval(2); return 'Construction begins to fanfare.'; } },
+      { label: 'Foreign-financed partnership', hint: 'Cheaper, but you share the profits', run: (fx) => { fx.project({ key: 'landmarkPpp', name: fx.c.id === 'nepal' ? 'Foreign-built dam & transmission line' : 'Foreign-built rail & bridge project', icon: '🏗️', desc: 'Built and operated by a foreign partner who shares the profits.', months: 48, foreign: true, costPct: 0.3, asset: { infrastructure: 2.5 }, mod: { revenuePct: -0.1, growth: 0.06 } }); fx.approval(1); return 'A foreign partner will build and operate it (it takes a construction slot).'; } },
       { label: 'Shelve it', hint: 'Keep the money', run: () => 'The proposal is filed away.' },
     ],
   },

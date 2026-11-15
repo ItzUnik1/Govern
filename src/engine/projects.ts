@@ -66,6 +66,36 @@ export const PROJECTS: ProjectDef[] = [
 
 export const getProject = (id: string) => PROJECTS.find((p) => p.id === id);
 
+/** Definition for any project in the game: catalogue entry, or one created by an event. */
+export function defOf(p: ProjectState): ProjectDef | undefined {
+  const d = getProject(p.id);
+  if (d) return d;
+  const c = p.custom;
+  if (!c) return undefined;
+  return { id: p.id, name: c.name, icon: c.icon, cat: 'Industry & tech', desc: c.desc, costPct: 0, months: p.plannedMonths, maintenance: c.maintenance, asset: c.asset, mod: c.mod as ProjectDef['mod'], exportBoost: c.exportBoost, sector: c.sector as ProjectDef['sector'] };
+}
+
+export const OPPOSITION_MSG = 'Only the government can do this - you are in opposition.';
+
+export interface EventProjectSpec {
+  key: string; name: string; icon: string; desc: string; months: number; foreign: boolean;
+  /** Government share of the cost, % of GDP (0 for fully foreign-financed). */
+  costPct?: number; maintenance?: number;
+  asset?: Partial<Record<StockKey, number>>; mod?: Record<string, number>; exportBoost?: number; sector?: Record<string, number>;
+}
+
+/** Start a construction project created by an event. It occupies a construction slot like any other project. */
+export function startEventProject(s: GameState, spec: EventProjectSpec): void {
+  const p: ProjectState = {
+    id: `ev:${spec.key}:${s.turn}`, status: 'building', startTurn: s.turn, progress: 0, spent: 0,
+    budget: ((spec.costPct ?? 0) / 100) * s.gdp, plannedMonths: spec.months, delayMonths: 0, overrunPct: 0, monthlySpend: 0, completedTurn: null,
+    log: [spec.foreign ? 'Foreign-financed' : 'Event project'],
+    custom: { name: spec.name, icon: spec.icon, desc: spec.desc, maintenance: spec.maintenance ?? 0, foreign: spec.foreign, asset: spec.asset, mod: spec.mod, exportBoost: spec.exportBoost, sector: spec.sector },
+  };
+  refreshSpend(s, p);
+  s.projects.push(p);
+}
+
 export function availableProjects(c: CountryDef): ProjectDef[] {
   return PROJECTS.filter((p) => !p.only || p.only.includes(c.id));
 }
@@ -80,7 +110,7 @@ export function projectCostPct(s: GameState): number {
   let t = 0;
   for (const p of s.projects) {
     if (p.status === 'building') t += (p.monthlySpend * 12 / s.gdp) * 100;
-    else if (p.status === 'complete') t += getProject(p.id)?.maintenance ?? 0;
+    else if (p.status === 'complete') t += defOf(p)?.maintenance ?? 0;
   }
   return t;
 }
@@ -107,6 +137,7 @@ function refreshSpend(s: GameState, p: ProjectState) {
 }
 
 export function startProject(s: GameState, id: string): string | null {
+  if (!s.pol.inGovernment) return OPPOSITION_MSG;
   const d = getProject(id);
   if (!d) return 'Unknown project';
   const st = projectStatus(s, d);
@@ -118,6 +149,7 @@ export function startProject(s: GameState, id: string): string | null {
 }
 
 export function setProjectPaused(s: GameState, id: string, paused: boolean): string | null {
+  if (!s.pol.inGovernment) return OPPOSITION_MSG;
   const p = s.projects.find((x) => x.id === id);
   if (!p || p.status === 'complete') return 'Not available';
   if (!paused && p.status === 'paused' && activeCount(s) >= projectCapacity(s)) return 'Construction capacity full';
@@ -127,6 +159,7 @@ export function setProjectPaused(s: GameState, id: string, paused: boolean): str
 }
 
 export function cancelProject(s: GameState, id: string): void {
+  if (!s.pol.inGovernment) return;
   const i = s.projects.findIndex((x) => x.id === id);
   if (i < 0 || s.projects[i].status === 'complete') return;
   const p = s.projects[i];
@@ -148,7 +181,7 @@ export function stepProjects(s: GameState, c: CountryDef, rnd: () => number, not
   let load = 0;
   for (const p of s.projects) {
     if (p.status !== 'building') continue;
-    const d = getProject(p.id);
+    const d = defOf(p);
     if (!d) continue;
     const eff = s.stocks.efficiency;
     // random setbacks

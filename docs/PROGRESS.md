@@ -70,3 +70,11 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 - UI: new World tab (Relations / Organisations / Loans & aid); Build tab now has Projects and Research; nav has 7 tabs.
 - Save version 3 (old saves migrate).
 - Known limitations: nations are generic blocs (no AI diplomacy between them); relations are one number per nation; no military conflict; loans' interest is modelled as budget payments.
+
+## Navigation + logo update (after Stage 3)
+- Bottom bar is now 5 tabs: Home, Economy, Govern, World, Menu. The Menu hub has grouped cards (Politics: Parliament/Laws/Cabinet/Parties/Elections/Legacy; Development: Projects/Research; Records: History/Briefing; Game: Save-Load/Settings/Help) and a Pinned row (star toggle, stored in localStorage `govern.pins`). Menu pages show a "‹ Menu" back link; Android back goes page -> Menu -> Home.
+- `go(tab, sub)` in ctx opens a specific segment (Politics segment, Build mode, More page).
+- App icon / title logo generated from the supplied artwork (legacy, round, adaptive icons; `public/logo.png`).
+- Real party names now used for all 8 countries (positions and shares remain approximations; leaders are generated people).
+- Event-created projects (foreign factory, landmark project, PPP, tech hub) are real `ProjectState` entries (`custom` field) that occupy construction slots. Foreign-financed ones cost the state little or nothing.
+- In opposition, starting/pausing/cancelling projects, research budget/techs and all diplomacy actions are refused (engine guard + disabled UI with a lock notice).
