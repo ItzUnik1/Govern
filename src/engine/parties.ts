@@ -131,7 +131,7 @@ export const SYSTEMS: Record<string, SystemDef> = {
       { id: 'north', name: 'North & City-states', seatShare: 0.17, urban: 0.65, cons: 0.4 },
     ],
     parties: [
-      { id: 'de_cdu', name: 'Christian Union', short: 'CU', color: '#1f2937', econ: 0.4, social: 0.5, base: 28, blurb: 'Large centre-right people’s party.' },
+      { id: 'de_cdu', name: 'Christian Union', short: 'CU', color: '#9aa7bd', econ: 0.4, social: 0.5, base: 28, blurb: 'Large centre-right people’s party.' },
       { id: 'de_spd', name: 'Social Democratic Alliance', short: 'SDA', color: '#ef4444', econ: -0.4, social: -0.2, base: 17, blurb: 'Centre-left party of unions and pensioners.' },
       { id: 'de_grn', name: 'Green Future', short: 'GF', color: '#34c88a', econ: -0.5, social: -0.8, base: 12, blurb: 'Environmentalist, socially liberal.' },
       { id: 'de_fdp', name: 'Liberal Freedom Party', short: 'LFP', color: '#f5b84b', econ: 0.8, social: -0.3, base: 6, blurb: 'Pro-market liberals; often the kingmaker.' },

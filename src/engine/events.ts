@@ -2,6 +2,8 @@
 // country), offer 2-3 choices each, and every choice has an immediate effect plus lingering
 // consequences via modifiers/flags. Cash amounts are % of annual GDP so they scale per country.
 import type { CountryDef, GameState, Modifier, SpendKey, StockKey, TaxKey } from './types';
+import { coalSeats, confidenceVote, fallOfGovernment, genMinister, pdef, sysOf, totalSeats } from './politics';
+import { POSTS } from './parties';
 
 export interface Fx {
   s: GameState;
@@ -468,6 +470,56 @@ export const EVENTS: EventDef[] = [
     ],
   },
 ];
+
+const weakPartner = (s: GameState) => s.pol.coalition.filter((id) => id !== s.pol.pmParty).map((id) => ({ id, sat: s.pol.parties[id].sat })).sort((a, b) => a.sat - b.sat)[0];
+function worstMinister(s: GameState) {
+  return Object.values(s.pol.cabinet).filter((m): m is NonNullable<typeof m> => !!m).sort((a, b) => a.comp - b.comp)[0];
+}
+const bumpPartners = (s: GameState, d: number) => s.pol.coalition.forEach((id) => { if (id !== s.pol.pmParty) s.pol.parties[id].sat = Math.min(100, s.pol.parties[id].sat + d); });
+EVENTS.push(
+  {
+    id: 'noConfidence', title: 'No-confidence motion', icon: '🗳️', category: 'Parliament', cooldown: 10,
+    weight: () => 0,
+    text: (s) => `The opposition has tabled a motion of no confidence. Your coalition commands ${coalSeats(s)} of ${totalSeats(s)} seats${s.pol.minority ? ' (a minority government)' : ''}, and ${s.pol.coalition.length > 1 ? 'your partners are wavering' : 'your own MPs are restless'}. The vote is tomorrow.`,
+    choices: [
+      { label: 'Whip your MPs and woo partners', hint: 'Costs a little approval; partners calm down', run: (fx) => { fx.approval(-1); bumpPartners(fx.s, 12); const v = confidenceVote(fx.s, fx.rnd); if (v.won) { fx.stability(3); return `You survive the vote ${v.yes} to ${v.no}.`; } fallOfGovernment(fx.s); return `The government falls ${v.no} to ${v.yes}. A snap election is called.`; } },
+      { label: 'Buy support with concessions', hint: 'Costs 0.3% of GDP; partners are happier', run: (fx) => { fx.cost(0.3); bumpPartners(fx.s, 22); fx.approval(-0.5); const v = confidenceVote(fx.s, fx.rnd); if (v.won) { fx.stability(2); return `Concessions win the day, ${v.yes} to ${v.no}.`; } fallOfGovernment(fx.s); return `Even concessions were not enough: ${v.no} to ${v.yes}. A snap election follows.`; } },
+      { label: 'Call a snap election', hint: 'Go to the voters now', run: (fx) => { fx.s.monthsToElection = 1; fx.s.flags.snap = 1; fx.stability(-1); return 'You ask for dissolution. Voters will decide next month.'; } },
+      { label: 'Face the vote', hint: 'No deals, no drama', run: (fx) => { const v = confidenceVote(fx.s, fx.rnd); if (v.won) { fx.stability(2); fx.approval(1); return `Confidence is carried ${v.yes} to ${v.no}.`; } fallOfGovernment(fx.s); return `You lose ${v.no} to ${v.yes}. Parliament is dissolved.`; } },
+    ],
+  },
+  {
+    id: 'coalitionCrisis', title: 'Coalition partner ultimatum', icon: '🤝', category: 'Parliament', cooldown: 14,
+    weight: (s) => (s.pol.inGovernment && s.pol.coalition.length > 1 && (weakPartner(s)?.sat ?? 100) < 32 ? 6 : 0),
+    text: (s) => { const w = weakPartner(s); return `${pdef(s, w.id).name} (${pdef(s, w.id).short}) is furious with the government's direction and threatens to walk out of the coalition unless something changes.`; },
+    choices: [
+      { label: 'Give them a policy win', hint: 'Shifts policy toward their agenda (cost 0.2% GDP)', run: (fx) => { const w = weakPartner(fx.s); const left = pdef(fx.s, w.id).econ < 0; fx.cost(0.2); if (left) fx.spend('welfare', 0.3); else fx.tax('incomeTax', -0.5); fx.s.pol.parties[w.id].sat = Math.min(100, w.sat + 28); fx.approval(-0.5); return 'A package is agreed. The partner stays - for now.'; } },
+      { label: 'Offer an extra ministry', hint: 'Hands them influence', run: (fx) => { const w = weakPartner(fx.s); const post = Object.keys(fx.s.pol.cabinet).find((p) => fx.s.pol.cabinet[p]?.party === fx.s.pol.playerParty && p !== 'finance'); if (post) fx.s.pol.cabinet[post] = genMinister(sysOf(fx.s), post, w.id, fx.rnd); fx.s.pol.parties[w.id].sat = Math.min(100, w.sat + 24); return 'Another ministry goes to your partner. They stop shouting.'; } },
+      { label: 'Call their bluff', hint: 'Risky: they may leave', run: (fx) => { const w = weakPartner(fx.s); if (fx.rnd() < 0.55) { fx.s.pol.parties[w.id].sat = Math.min(100, w.sat + 15); fx.stability(1); return 'They blink. Your authority grows.'; } fx.s.pol.parties[w.id].sat = 4; fx.stability(-2); return 'They storm out of the coalition. You must manage without them.'; } },
+    ],
+  },
+  {
+    id: 'ministerScandal', title: 'Minister in trouble', icon: '📰', category: 'Cabinet', cooldown: 18,
+    weight: (s) => (s.pol.inGovernment ? 0.35 + 0.8 * Object.values(s.pol.cabinet).filter((m) => m && m.comp < 40).length : 0),
+    text: (s) => { const m = worstMinister(s); return m ? `Newspapers allege that ${m.name}, your ${POSTS.find((p) => p.id === m.post)?.label} minister, misused public funds. The opposition demands a resignation.` : 'A minister is in the headlines for the wrong reasons.'; },
+    choices: [
+      { label: 'Demand their resignation', hint: 'Clean, but you lose a minister', run: (fx) => { const m = worstMinister(fx.s); if (m) { fx.s.pol.cabinet[m.post] = { ...genMinister(sysOf(fx.s), m.post, m.party, fx.rnd), comp: 45, rep: 45, perf: 45 }; if (m.party !== fx.s.pol.playerParty) fx.s.pol.parties[m.party].sat -= 8; } fx.approval(1); fx.stability(1); return 'The minister quits; a caretaker takes over.'; } },
+      { label: 'Stand by the minister', hint: 'Might blow over - or blow up', run: (fx) => { if (fx.rnd() < 0.45) { fx.approval(-1); return 'The story dies down.'; } fx.approval(-4); fx.stability(-2); fx.mod('Scandal fallout', 5, { approval: -1.5 }); return 'New revelations emerge. Voters are not amused.'; } },
+      { label: 'Order an independent inquiry', hint: 'Slow but credible', run: (fx) => { fx.approval(0.5); fx.confidence(1); fx.cost(0.02); return 'An inquiry is launched. The story moves on.'; } },
+    ],
+  },
+  {
+    id: 'leadershipChallenge', title: 'Rebellion in your own party', icon: '⚔️', category: 'Parliament', cooldown: 30,
+    weight: (s) => (s.pol.inGovernment && s.approval < 36 && s.monthsInOffice > 12 ? 3 : 0),
+    text: () => 'Poor polls have convinced a faction of your own MPs that you should be replaced. Rumours of a leadership challenge swirl.',
+    choices: [
+      { label: 'Confront the rebels', hint: 'Win and you are strengthened', run: (fx) => { if (fx.rnd() < 0.6) { fx.stability(3); fx.approval(2); return 'You crush the challenge and tighten your grip.'; } fx.stability(-5); fx.approval(-3); fx.mod('Party civil war', 8, { stability: -2 }); return 'The challenge is narrowly survived, but your party is split.'; } },
+      { label: 'Offer rebels cabinet posts', hint: 'Expensive peace', run: (fx) => { fx.approval(-1); fx.stability(2); fx.cost(0.05); return 'Ambitious MPs are appointed ministers; the plotting stops.'; } },
+      { label: 'Ignore it', hint: 'Hope it fades', run: (fx) => { fx.stability(-2); fx.approval(-1); return 'The briefing against you continues.'; } },
+    ],
+  },
+);
+
 
 const BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
 export const getEvent = (id: string): EventDef | undefined => BY_ID.get(id);

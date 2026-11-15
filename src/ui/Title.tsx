@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { COUNTRY_LIST } from '../engine/countries';
 import { autoInfo, listSlots, loadSlot } from '../engine/save';
 import { DIFFICULTY_PRESETS, newGame } from '../engine/sim';
+import { SYSTEMS } from '../engine/parties';
 import type { CountryDef, Difficulty, GameState } from '../engine/types';
 import { Card, Seg, Stars, fmtMoney } from './common';
 
-type Step = 'title' | 'select' | 'detail' | 'difficulty' | 'load';
+type Step = 'title' | 'select' | 'detail' | 'difficulty' | 'party' | 'load';
 
 export default function Title({ onStart, onLoad }: { onStart: (s: GameState) => void; onLoad: (s: GameState) => void }) {
   const [step, setStep] = useState<Step>('title');
@@ -108,7 +109,25 @@ export default function Title({ onStart, onLoad }: { onStart: (s: GameState) => 
             </div>
           ))}
         </Card>
-        <button className="btn big" onClick={() => onStart(newGame(country.id, diff))}>Take office as {country.title} ▶</button>
+        <button className="btn big" onClick={() => setStep('party')}>Choose your party ›</button>
+      </div>
+    );
+  }
+  if (step === 'party' && country) {
+    const sy = SYSTEMS[country.id];
+    const opts = sy.leadable.map((id) => sy.parties.find((p) => p.id === id)!);
+    const lab = (x: number, a: string, b: string) => (x < -0.35 ? a : x > 0.35 ? b : 'centrist');
+    return (
+      <div className="page">
+        <button className="back" onClick={() => setStep('difficulty')}>‹ Difficulty</button>
+        <h2>Your party</h2>
+        <div className="small muted">You lead one of the two parties able to form a government. {sy.electionNote}</div>
+        {opts.map((p) => (
+          <button key={p.id} className="country-card" style={{ borderColor: p.color }} onClick={() => onStart(newGame(country.id, diff, undefined, 'You', p.id))}>
+            <span className="fl" style={{ color: p.color }}>●</span>
+            <div><b>{p.name}</b><div className="small muted">{p.blurb}</div><div className="tiny muted">{lab(p.econ, 'Left on economy', 'Market-oriented')} · {lab(p.social, 'liberal', 'conservative')} · ~{p.base}% of voters</div><div className="tiny" style={{ marginTop: 4 }}>Take office as {country.title} ▶</div></div>
+          </button>
+        ))}
       </div>
     );
   }

@@ -2,6 +2,7 @@
 // See docs/SIMULATION.md for the formulas explained in plain language.
 import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
+import { confirmFormation, declineFormation, fallOfGovernment, govSeatShare, initPolitics, isPresidential, ministerBonus, ministerMult, monthlyPolitics, ncRisk, oppositionDrift, pdef, runElection, settleGovernment, sysOf } from './politics';
 import { COUNTRIES, administration0 } from './countries';
 import { ACTIONS, PROGRAMS } from './programs';
 import { availableChoices, drawEvent, getEvent, type Fx } from './events';
@@ -10,7 +11,7 @@ import type {
   MonthReport, ReportDelta, SpendKey, StockKey, TaxKey,
 } from './types';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const START_YEAR = 2026;
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -24,7 +25,7 @@ const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x
 const round = (x: number, d = 1) => { const f = 10 ** d; return Math.round(x * f) / f; };
 
 // ---------- RNG (state kept in the save so games are reproducible) ----------
-function rngNext(s: { seed: number }): number {
+export function rngNext(s: { seed: number }): number {
   s.seed = (s.seed + 0x6d2b79f5) | 0;
   let t = Math.imul(s.seed ^ (s.seed >>> 15), 1 | s.seed);
   t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
@@ -46,7 +47,7 @@ function policyVector(s: GameState): number[] {
 }
 
 // ---------- New game ----------
-export function newGame(countryId: string, difficulty: Difficulty, seed = Math.floor(Math.random() * 2 ** 31), leader = 'You'): GameState {
+export function newGame(countryId: string, difficulty: Difficulty, seed = Math.floor(Math.random() * 2 ** 31), leader = 'You', partyId?: string): GameState {
   const c = COUNTRIES[countryId];
   if (!c) throw new Error('Unknown country ' + countryId);
   const adm = administration0(c);
@@ -63,8 +64,9 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [],
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'],
   };
+  s.pol = initPolitics(s, partyId, () => rngNext(s));
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);
   s.revenueM = f.revenueM; s.spendingM = f.spendingM; s.interestM = f.interestM;
@@ -275,7 +277,7 @@ export function resolveEvent(s: GameState, choiceIndex: number): string {
 
 // ---------- Monthly step ----------
 export function advanceMonth(input: GameState): GameState {
-  if (input.gameOver || input.pendingEvent) return input;
+  if (input.gameOver || input.pendingEvent || input.pol.pending) return input;
   const s: GameState = structuredClone(input);
   const c = getCountry(s);
   const rnd = () => rngNext(s);
@@ -285,8 +287,9 @@ export function advanceMonth(input: GameState): GameState {
   s.lastEventOutcome = null;
   s.lastElection = null;
 
+  if (!s.pol.inGovernment) oppositionDrift(s);
   // --- 0. Policy changes since last month: announcement effects, VAT price effect, churn penalty ---
-  const pv = policyVector(s);
+  let pv = policyVector(s);
   if (s.prevPolicy.length === pv.length) {
     const dInc = s.tax.incomeTax - s.prevPolicy[0];
     const dVat = s.tax.vat - s.prevPolicy[2];
@@ -294,6 +297,13 @@ export function advanceMonth(input: GameState): GameState {
     if (dInc < -0.05 || dVat < -0.05) { s.approval = clamp(s.approval + 0.5 * (Math.max(0, -dInc) + Math.max(0, -dVat)), 3, 95); }
     let churn = Math.abs(s.tax.incomeTax - s.prevPolicy[0]) / 2 + Math.abs(s.tax.corpTax - s.prevPolicy[1]) / 2 + Math.abs(dVat) / 1.5;
     for (let i = 3; i < 9; i++) churn += Math.abs(pv[i] - s.prevPolicy[i]) / 0.5;
+    if (churn > 4 && s.pol.inGovernment && (govSeatShare(s) <= 0.5 || s.pol.minority) && rnd() < 0.6) {
+      const p = s.prevPolicy; s.tax.incomeTax = p[0]; s.tax.corpTax = p[1]; s.tax.vat = p[2];
+      s.spend.education = p[3]; s.spend.health = p[4]; s.spend.infrastructure = p[5]; s.spend.defence = p[6]; s.spend.welfare = p[7]; s.spend.administration = p[8];
+      pv = policyVector(s); churn = 0;
+      s.stability = clamp(s.stability - 2, 3, 98); s.approval = clamp(s.approval - 1, 3, 95);
+      notes.push(isPresidential(s) ? 'Congress blocked your budget changes; the old budget stays.' : 'Parliament voted down your budget changes; the old budget stays.');
+    }
     if (churn > 3) { const hit = (churn - 3) * 0.6; s.confidence = clamp(s.confidence - hit, 0, 100); notes.push('Sweeping policy changes rattled investors (confidence -' + hit.toFixed(1) + ').'); }
   }
   if (Math.abs(s.tax.vat - s.lastVat) > 0.05) {
@@ -346,7 +356,8 @@ export function advanceMonth(input: GameState): GameState {
   s.inflation = clamp(s.inflation + 0.06 * (c.inflationTarget - s.inflation) + pressure / 12 + 0.06 * diff.economy * normal(rnd), -3, 80);
 
   // --- 5. Unemployment ---
-  const uTarget = c.unemployment0 + mod2.unemployment + pe.unemployment;
+  const mb = ministerBonus(s);
+  const uTarget = c.unemployment0 + mod2.unemployment + pe.unemployment + mb.unemp;
   s.unemployment = clamp(s.unemployment + 0.05 * (uTarget - s.unemployment) - (0.4 * (s.growth - c.potentialGrowth)) / 12 + 0.04 * diff.economy * normal(rnd), 0.8, 35);
 
   // --- 6. Monetary policy (independent central bank) and borrowing costs ---
@@ -367,13 +378,18 @@ export function advanceMonth(input: GameState): GameState {
   s.currency = clamp(s.currency + 0.08 * (fair - s.currency) + 0.5 * diff.economy * normal(rnd), 40, 160);
 
   // --- 8. Investor confidence ---
-  const cTarget = 50 + 0.45 * (s.stability - c.stability0) - (d('corpTax') > 0 ? 0.8 : 0.5) * d('corpTax') + 0.12 * (st.infrastructure - st0.infrastructure) - 0.12 * Math.max(0, dp - Math.max(90, c.debtPct0)) * (1 - c.debtTolerance) - 1.0 * Math.max(0, s.inflation - c.inflationTarget - 3) + mod2.confidence + pe.confidence;
+  const cTarget = 50 + 0.45 * (s.stability - c.stability0) - (d('corpTax') > 0 ? 0.8 : 0.5) * d('corpTax') + 0.12 * (st.infrastructure - st0.infrastructure) - 0.12 * Math.max(0, dp - Math.max(90, c.debtPct0)) * (1 - c.debtTolerance) - 1.0 * Math.max(0, s.inflation - c.inflationTarget - 3) + mod2.confidence + pe.confidence + mb.conf;
   s.confidence = clamp(s.confidence + 0.1 * (clamp(cTarget, 5, 95) - s.confidence), 0, 100);
 
   // --- 9. Public services: slow-moving stocks (education, health, infrastructure, security, efficiency) ---
   const targets = stockTargets(s);
   const speed: Record<StockKey, number> = { education: 0.012, health: 0.02, infrastructure: 0.012, security: 0.02, efficiency: 0.02 };
-  (Object.keys(targets) as StockKey[]).forEach((k) => { s.stocks[k] = clamp(s.stocks[k] + speed[k] * (targets[k] - s.stocks[k]), 0, 100); });
+  const postFor: Record<StockKey, string[]> = { education: ['education'], health: ['health'], infrastructure: ['infrastructure'], security: ['defence'], efficiency: ['interior', 'finance'] };
+  (Object.keys(targets) as StockKey[]).forEach((k) => {
+    const gap = targets[k] - s.stocks[k];
+    const mm = gap > 0 ? postFor[k].reduce((a, p) => a + ministerMult(s, p), 0) / postFor[k].length : 1;
+    s.stocks[k] = clamp(s.stocks[k] + speed[k] * gap * mm, 0, 100);
+  });
 
   // --- 10. Money: debt, GDP, population, living standards ---
   const spendingM = f.spendingM + s.pendingCosts;
@@ -407,12 +423,13 @@ export function advanceMonth(input: GameState): GameState {
     - 0.8 * Math.max(0, s.unemployment - c.unemployment0 - 1.5)
     - 0.6 * Math.max(0, -s.growth)
     + 0.08 * (st.security - st0.security) + 0.08 * (st.efficiency - st0.efficiency)
-    + mod2.stability + pe.stability;
+    + mod2.stability + pe.stability + mb.stab;
   s.stability = clamp(s.stability + 0.1 * (clamp(sTarget, 5, 98) - s.stability) + 0.3 * diff.stability * normal(rnd), 3, 98);
 
   // --- 12. Calendar, expiry ---
   s.turn++; s.monthsInOffice++; s.monthsToElection--;
   s.m++; if (s.m > 11) { s.m = 0; s.y++; }
+  monthlyPolitics(s, rnd, notes);
   for (const k of Object.keys(s.flags)) if (k.startsWith('use_')) s.flags[k] *= 0.92;
   for (const k of Object.keys(s.cooldowns)) { s.cooldowns[k]--; if (s.cooldowns[k] <= 0) delete s.cooldowns[k]; }
   const kept: Modifier[] = [];
@@ -442,19 +459,37 @@ export function advanceMonth(input: GameState): GameState {
   s.history.push(historyPoint(s));
 
   // --- 14. Ousting by own party (very low approval and stability for a sustained period) ---
-  s.flags.lowStreak = s.approval < 18 && s.stability < 30 ? (s.flags.lowStreak ?? 0) + 1 : 0;
+  s.flags.lowStreak = s.pol.inGovernment && s.approval < 18 && s.stability < 30 ? (s.flags.lowStreak ?? 0) + 1 : 0;
   if (s.flags.lowStreak >= 3) {
     s.gameOver = { kind: 'lost', title: 'Forced out of office', text: 'With approval and stability in freefall, your own party has removed you as leader.' };
     return s;
   }
 
   // --- 15. Election, else random/conditional event ---
-  if (s.monthsToElection <= 0) { holdElection(s, c, rnd); return s; }
+  const P = s.pol;
+  if (isPresidential(s) && P.midtermIn > 0) { P.midtermIn--; if (P.midtermIn === 0 && s.monthsToElection > 3) { holdElection(s, c, rnd, true); return s; } }
+  if (s.monthsToElection <= 0) { holdElection(s, c, rnd, false); return s; }
+  if (!isPresidential(s) && s.monthsInOffice >= 6 && s.monthsToElection > 2 && !s.cooldowns.noConfidence && rnd() < ncRisk(s)) {
+    if (P.inGovernment) { s.pendingEvent = 'noConfidence'; s.cooldowns.noConfidence = 10; s.eventCounts.noConfidence = (s.eventCounts.noConfidence ?? 0) + 1; return s; }
+    fallOfGovernment(s); s.cooldowns.noConfidence = 10;
+    s.lastReport?.notes.push('The government has lost a confidence vote - a snap election is called.');
+    return s;
+  }
   const evId = drawEvent(s, c, rnd);
   if (evId) {
     const def = getEvent(evId)!;
     s.cooldowns[evId] = def.cooldown;
     s.eventCounts[evId] = (s.eventCounts[evId] ?? 0) + 1;
+    if (!P.inGovernment) {
+      const ch = availableChoices(def, s, c);
+      const pick = ch[Math.floor(rnd() * ch.length)];
+      if (pick) {
+        const out = pick.run(makeFx(s, c, rnd));
+        s.eventHistory.push({ y: s.y, m: s.m, id: def.id, title: def.title, choice: 'Government: ' + pick.label, outcome: out });
+        s.lastReport?.notes.push(`${def.title} - the government chose: ${pick.label}.`);
+      }
+      return s;
+    }
     s.pendingEvent = evId;
     if (def.onShow) def.onShow(makeFx(s, c, rnd));
   }
@@ -471,44 +506,75 @@ export function electionOutlook(s: GameState): { projected: number; threshold: n
   return { projected, threshold, margin, label };
 }
 
-function holdElection(s: GameState, c: CountryDef, rnd: () => number) {
+function holdElection(s: GameState, c: CountryDef, rnd: () => number, midterm: boolean) {
+  const P = s.pol, sy = sysOf(s);
+  const wasPM = P.inGovernment;
   const term = s.term;
-  const swing = normal(rnd) * 3.5;
-  const o = electionOutlook(s);
-  const voteShare = clamp(o.projected + swing, 5, 80);
-  const threshold = o.threshold;
-  const turnout = clamp(c.turnout + (c.id === 'australia' ? 0 : 2 * (c.polarisation - 0.5) + (s.approval < 35 ? 2 : 0)), 40, 95);
-  const mustRetire = c.maxTerms !== null && term >= c.maxTerms;
-  let won = voteShare >= threshold;
-  let note = '';
-  const rec: ElectionRecord = { y: s.y, m: s.m, term, approval: round(s.approval, 1), voteShare: round(voteShare, 1), turnout: round(turnout, 1), won, note };
-  if (mustRetire) {
-    // Constitutional term limit: you cannot stand again. Your party's chosen successor stands; you keep steering.
-    rec.note = won
-      ? `You are term-limited, but your successor carries the party to victory with ${rec.voteShare}%. The new administration continues your agenda.`
-      : `You are term-limited and your successor loses with ${rec.voteShare}%.`;
-    s.electionHistory.push(rec); s.lastElection = rec;
-    if (won) {
-      s.term = 1; s.electionsWon++; s.monthsToElection = c.termYears * 12; s.monthsInOffice = Math.floor(s.monthsInOffice * 0.3);
-      s.flags.successions = (s.flags.successions ?? 0) + 1; s.flags.lowStreak = 0;
-    } else {
-      s.gameOver = { kind: 'retired', title: 'Term limit reached', text: `You completed the maximum ${c.maxTerms} terms and your party lost the following election.` };
-    }
+  const res = runElection(s, rnd, midterm);
+  const mine = res.shares[P.playerParty] ?? 0;
+  const rec: ElectionRecord = { y: s.y, m: s.m, term, approval: round(s.approval, 1), voteShare: round(mine, 1), turnout: res.turnout, won: false, note: '', kind: midterm ? 'midterm' : 'general', shares: res.shares, seats: res.seats, ev: res.ev, pm: P.pmParty, coalition: [...P.coalition] };
+  s.electionHistory.push(rec); s.lastElection = rec;
+  const total = Object.values(res.seats).reduce((a, b) => a + b, 0);
+  const myPct = Math.round((res.seats[P.playerParty] / total) * 100);
+  if (midterm) {
+    const ctrl = res.seats[P.pmParty] > total / 2;
+    rec.won = !wasPM || ctrl;
+    rec.note = wasPM ? (ctrl ? `Midterms: your party keeps control of the House (${res.seats[P.playerParty]} of ${total} seats).` : `Midterms: the opposition takes the House. Expect gridlock - bills will be hard to pass.`) : `Midterms: the president's party ${ctrl ? 'holds' : 'loses'} the House.`;
+    P.midtermIn = 0;
     return;
   }
-  if (won) {
-    note = `You are re-elected with ${rec.voteShare}% of the vote (${rec.turnout}% turnout).`;
-    s.term++; s.electionsWon++; s.monthsToElection = c.termYears * 12; s.monthsInOffice = Math.floor(s.monthsInOffice * 0.5);
-    s.approval = clamp(s.approval + 4, 3, 95);
-    s.stability = clamp(s.stability + 3, 3, 98);
-    s.flags.lowStreak = 0;
+  const outcome = settleGovernment(s, res, rnd);
+  rec.pm = P.pmParty; rec.coalition = [...P.coalition];
+  if (outcome === 'pending') { rec.note = `Hung parliament: your party holds ${res.seats[P.playerParty]} of ${total} seats (${myPct}%). Negotiate a coalition.`; s.flags.resolvingElection = 1; return; }
+  finishElection(s, c, rec, outcome === 'player', wasPM);
+  void sy;
+}
+
+/** Applies the consequences of an election once it is known who governs (also called after coalition talks). */
+export function finishElection(s: GameState, c: CountryDef, rec: ElectionRecord, playerPM: boolean, wasPM: boolean) {
+  const P = s.pol;
+  const term = rec.term;
+  const mustRetire = c.maxTerms !== null && wasPM && term >= c.maxTerms;
+  const total = Object.values(rec.seats ?? {}).reduce((a, b) => a + b, 0) || 1;
+  const mySeats = rec.seats?.[P.playerParty] ?? 0;
+  const seatTxt = `${mySeats} of ${total} seats`;
+  s.flags.resolvingElection = 0; s.flags.snap = 0; s.flags.lowStreak = 0;
+  rec.pm = P.pmParty; rec.coalition = [...P.coalition];
+  rec.won = playerPM;
+  const months = c.termYears * 12;
+  if (playerPM) {
+    P.inGovernment = true; P.defeats = 0;
+    const coal = P.coalition.length > 1 ? ` in coalition with ${P.coalition.filter((x) => x !== P.playerParty).map((x) => pdef(s, x).short).join(', ')}` : '';
+    if (mustRetire) {
+      rec.note = `You are term-limited, but your successor carries the party to victory (${seatTxt}). The new administration continues your agenda.`;
+      s.term = 1; s.electionsWon++; s.monthsInOffice = Math.floor(s.monthsInOffice * 0.3); P.tenure++;
+      s.flags.successions = (s.flags.successions ?? 0) + 1;
+    } else if (wasPM) {
+      rec.note = `You are re-elected with ${rec.voteShare}% of the vote (${seatTxt})${coal}.`;
+      s.term++; s.electionsWon++; P.tenure++; s.monthsInOffice = Math.floor(s.monthsInOffice * 0.5);
+      s.approval = clamp(s.approval + 4, 3, 95); s.stability = clamp(s.stability + 3, 3, 98);
+    } else {
+      rec.note = `Back in power! Your party wins ${seatTxt} and forms a government${coal}.`;
+      s.term = 1; s.electionsWon++; P.tenure = 0; s.monthsInOffice = 0; P.lastGovernmentChange = `${MONTHS[s.m]} ${s.y}`;
+      s.approval = clamp(c.approval0 + 4, 3, 95); s.stability = clamp(Math.max(s.stability, c.stability0 - 5), 3, 98);
+    }
   } else {
-    note = `Your party takes ${rec.voteShare}% and loses power.`;
-    s.gameOver = { kind: 'lost', title: 'Defeated at the polls', text: `Voters have removed you from office after ${term} term(s). In Stage 2 you will be able to lead the opposition and return to power.` };
+    const gov = pdef(s, P.pmParty);
+    if (wasPM) {
+      P.inGovernment = false; P.defeats = 1; P.tenure = 0; s.monthsInOffice = 0;
+      rec.note = `Your party wins ${seatTxt} and loses power. ${gov.name} forms the new government. You now lead the opposition.`;
+      s.approval = clamp(c.approval0 + 3, 3, 95); s.stability = clamp(Math.max(s.stability, c.stability0 - 8), 3, 98);
+      P.lastGovernmentChange = `${MONTHS[s.m]} ${s.y}`;
+    } else {
+      P.defeats++; P.tenure = P.pmParty === rec.pm && rec.coalition?.[0] === P.pmParty ? P.tenure : 0;
+      rec.note = `Another defeat: your party wins ${seatTxt}. ${gov.name} governs.`;
+      s.monthsInOffice = 0; s.approval = clamp(c.approval0 + 3, 3, 95);
+    }
+    if (mustRetire) s.gameOver = { kind: 'retired', title: 'Term limit reached', text: `You completed the maximum ${c.maxTerms} terms and your party lost the following election.` };
+    else if (P.defeats >= 2) s.gameOver = { kind: 'lost', title: 'Removed as party leader', text: `After two straight election defeats your party has chosen a new leader. Your career as ${c.title} is over.` };
   }
-  rec.note = note;
-  s.electionHistory.push(rec);
-  s.lastElection = rec;
+  s.monthsToElection = months;
+  P.midtermIn = isPresidential(s) ? 24 : 0;
 }
 
 // ---------- Legacy ----------
@@ -555,4 +621,17 @@ export function advisories(s: GameState): Advisory[] {
   if (f.deficitPct < 0) out.push({ level: 'good', text: 'You are running a budget surplus.' });
   if (out.length === 0) out.push({ level: 'info', text: 'No urgent issues. Review your budget or enact a policy.' });
   return out.slice(0, 5);
+}
+
+/** Player's answer to coalition talks: a list of partners to invite, or null to decline and go into opposition. */
+export function resolveFormation(input: GameState, partners: string[] | null): string | null {
+  const s = input;
+  const c = getCountry(s);
+  const rnd = () => rngNext(s);
+  const rec = s.electionHistory[s.electionHistory.length - 1];
+  const wasPM = s.pol.inGovernment;
+  if (partners === null) declineFormation(s, rnd);
+  else { const err = confirmFormation(s, partners, rnd); if (err) return err; }
+  finishElection(s, c, rec, s.pol.inGovernment && s.pol.pmParty === s.pol.playerParty, wasPM);
+  return null;
 }

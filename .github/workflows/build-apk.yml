@@ -59,12 +59,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          set -o pipefail
-          GOVERN_BUILD=${{ github.run_number }} ./gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee /tmp/gradle.log
-      - name: Show build errors
-        if: failure()
-        run: |
-          grep -m12 -E "What went wrong|error:|Caused by|FAILED|Execution failed" -A3 /tmp/gradle.log | head -40 | while IFS= read -r l; do echo "::error::$l"; done
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Name the APK
         run: |

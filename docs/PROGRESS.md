@@ -49,4 +49,14 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 - New engine files: `econdata.ts`, `economy.ts`, `projects.ts`; `GameState.eco` and `GameState.projects` (old saves are migrated).
 - Typography: bundled Inter + Fraunces fonts, rem scale, Settings > text size (Small/Default/Large), typographic apostrophes and real minus signs.
 - Verified: typecheck, headless sims (`scripts/simtest.ts`, `scripts/ecoprobe.ts`), Playwright E2E at phone size. Debug APK via CI; not tested on a real device.
-- **Stage 2 (parties, parliament, coalitions, ministers) is NOT started yet** - design is in this file's notes and `src/engine/parties.ts` (data only).
+- Stage 2 was added after this update (see below).
+
+
+## Stage 2: Political simulation (done, debug APK; not device-tested)
+- Engine: `politics.ts` (vote shares, regions, seat allocation for FPTP / PR (D'Hondt) / mixed / preferential / US electoral college + midterms, government formation, coalition satisfaction, confidence & no-confidence, ministers), `laws.ts` (15 bills, 8 manifesto promises), `polactions.ts` (player actions), `parties.ts` (fictional parties, regions, systems for the 8 countries).
+- Game: choose one of two parties at start; seat-based elections; hung parliaments open coalition talks (partners ask for ministries); lose power -> you lead the opposition (government AI drifts policy, events auto-resolve, you campaign and attack); two straight defeats end your career; term limits and successors as in Stage 1.
+- Parliament: bills need a majority (whip count, lobbying), budget changes can be blocked when you lack a majority, confidence votes, snap elections, coalition ultimatums, minister scandals, leadership rebellions.
+- Cabinet: 8 ministries; competence affects stock growth, project speed, confidence, stability, jobs; reputation vs hidden performance; partner-held ministries.
+- Politics tab: Parliament / Laws / Cabinet (or Opposition) / Parties / Elections / Legacy.
+- Incumbent bonus is calibrated per country and party at game start so the opening position is a ~70% favourite. Probe (`scripts/polprobe.ts good`): a campaigning bot wins ~45-90% of elections depending on country/party.
+- Known limitations: Germany MMP is modelled as list PR; Australia preferences are simplified; ministers' effects are modest; coalition negotiation has fixed asking prices; no individual MPs.

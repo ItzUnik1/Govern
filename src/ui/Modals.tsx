@@ -3,6 +3,10 @@ import { availableChoices, getEvent } from '../engine/events';
 import { computeLegacy, getCountry, MONTHS } from '../engine/sim';
 import type { GameState } from '../engine/types';
 import { Card, fmtSigned } from './common';
+import { SeatBar } from './Politics';
+import { pdef, sysOf } from '../engine/politics';
+import { resolveFormation } from '../engine/sim';
+import type { Ctx } from './ctx';
 
 export function Briefing({ s, onClose }: { s: GameState; onClose: () => void }) {
   const r = s.lastReport;
@@ -62,7 +66,8 @@ export function ElectionModal({ s, onClose }: { s: GameState; onClose: () => voi
   return (
     <div className="overlay center"><div className="sheet">
       <div className="muted small">Election night · {MONTHS[e.m]} {e.y}</div>
-      <h2>{e.won ? '🎉 Victory' : '🗳️ Defeat'}</h2>
+      <h2>{e.kind === 'midterm' ? '🗳️ Midterm results' : s.pol.pending ? '🗳️ Hung parliament' : e.won ? '🎉 Victory' : '🗳️ Defeat'}</h2>
+      {e.seats && <SeatBar s={s} seats={e.seats} />}
       <div className="grid3">
         <div className="stat"><div className="l">Vote share</div><div className="v">{e.voteShare}%</div></div>
         <div className="stat"><div className="l">Turnout</div><div className="v">{e.turnout}%</div></div>
@@ -91,6 +96,46 @@ export function GameOver({ s, onTitle, onLoad }: { s: GameState; onTitle: () => 
       </Card>
       <button className="btn" onClick={onTitle}>New career</button>
       <button className="btn sec" onClick={onLoad}>Load a saved game</button>
+    </div></div>
+  );
+}
+
+export function FormationModal({ s, update, toast, onDone }: { s: GameState; update: Ctx['update']; toast: Ctx['toast']; onDone: () => void }) {
+  const F = s.pol.formation;
+  const [sel, setSel] = useState<string[]>([]);
+  if (!F) return null;
+  const sy = sysOf(s);
+  const mine = s.pol.parties[s.pol.playerParty].seats;
+  const tot = F.seatsTotal;
+  const seats = mine + sel.reduce((a, id) => a + s.pol.parties[id].seats, 0);
+  const posts = sel.reduce((a, id) => a + F.ask[id], 0);
+  const major = Math.floor(tot / 2) + 1;
+  const ids = Object.keys(F.ask).sort((a, b) => s.pol.parties[b].seats - s.pol.parties[a].seats);
+  const toggle = (id: string) => setSel((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
+  const go = (partners: string[] | null) => {
+    let err: string | null = null;
+    update((g) => { err = resolveFormation(g, partners); });
+    if (err) toast(err); else onDone();
+  };
+  return (
+    <div className="overlay center"><div className="sheet">
+      <div className="muted small">Coalition talks</div>
+      <h2>🤝 Form a government</h2>
+      <p className="small">{F.note}</p>
+      <SeatBar s={s} />
+      <div className="row between small" style={{ margin: '8px 0' }}><span>Your bloc: <b className={seats >= major ? 'good' : 'warn'}>{seats}</b> / {major} needed</span><span>Ministries offered: <b>{posts}</b></span></div>
+      {ids.length === 0 && <div className="small muted">No party is willing to join you.</div>}
+      {ids.map((id) => {
+        const p = pdef(sy, id); const on = sel.includes(id);
+        return (
+          <button key={id} className="choice" style={on ? { borderColor: p.color, background: 'var(--panel2)' } : undefined} onClick={() => toggle(id)}>
+            <b>{on ? '✔ ' : ''}{p.name} ({s.pol.parties[id].seats} seats)</b>
+            <span>Asks for {F.ask[id]} ministr{F.ask[id] === 1 ? 'y' : 'ies'}</span>
+          </button>
+        );
+      })}
+      <button className="btn" disabled={sel.length === 0 && mine < major} onClick={() => go(sel)}>{seats >= major ? 'Form government' : 'Form minority government'}</button>
+      <button className="btn sec" onClick={() => go(null)}>Go into opposition</button>
     </div></div>
   );
 }

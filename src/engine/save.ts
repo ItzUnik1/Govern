@@ -1,4 +1,5 @@
 import { initEco } from './economy';
+import { initPolitics } from './politics';
 // Local save system: five manual slots + one autosave, all in localStorage (works offline in the Android WebView).
 import { COUNTRIES } from './countries';
 import { SAVE_VERSION, dateLabel } from './sim';
@@ -60,6 +61,8 @@ function migrate(s: GameState): GameState {
   s.defAvg = s.defAvg ?? COUNTRIES[s.countryId].deficitPct0;
   if (!s.eco) s.eco = initEco(COUNTRIES[s.countryId]);
   s.projects = s.projects ?? [];
+  if (!s.pol) { s.pol = initPolitics(s, undefined, Math.random); s.pol.tenure = s.electionsWon ?? 0; }
+  s.v = SAVE_VERSION;
   return s;
 }
 export function loadSlot(n: number | 'auto'): GameState | null {

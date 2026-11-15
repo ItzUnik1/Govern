@@ -161,6 +161,49 @@ export interface ElectionRecord {
   turnout: number;
   won: boolean;
   note: string;
+  kind?: 'general' | 'midterm';
+  shares?: Record<string, number>;
+  seats?: Record<string, number>;
+  pm?: string;
+  coalition?: string[];
+  ev?: Record<string, number>;
+}
+
+export interface Minister { id: string; name: string; post: string; party: string; comp: number; rep: number; perf: number; months: number }
+export interface PartyState { seats: number; share: number; sat: number }
+export interface RegionResult { id: string; name: string; shares: Record<string, number>; seats: Record<string, number> }
+export interface PromiseState { id: string; madeTurn: number; base: Record<string, number> }
+export interface FormationState {
+  /** parties the player may invite (id -> ask in cabinet posts) */
+  ask: Record<string, number>;
+  seatsTotal: number;
+  note: string;
+}
+export interface PoliticsState {
+  playerParty: string;
+  inGovernment: boolean;
+  pmParty: string;
+  coalition: string[];
+  minority: boolean;
+  tenure: number; // consecutive election wins of the governing party
+  defeats: number; // consecutive election defeats of the player's party
+  parties: Record<string, PartyState>;
+  regional: RegionResult[];
+  cabinet: Record<string, Minister | null>;
+  pool: Record<string, Minister[]>;
+  passed: string[];
+  failedAt: Record<string, number>;
+  bill: { id: string; lobbied: boolean; turn: number } | null;
+  billCooldown: number;
+  promises: PromiseState[];
+  promiseLog: { label: string; kept: boolean }[];
+  campaign: number; // national campaign points (decay)
+  campaignRegion: Record<string, number>;
+  pending: 'formation' | null;
+  formation: FormationState | null;
+  lastGovernmentChange: string | null;
+  midtermIn: number; // months until midterm (presidential systems), 0 = none
+  houseTilt: number;
 }
 
 export interface GameOver {
@@ -232,6 +275,7 @@ export interface GameState {
 
   eco: EcoState;
   projects: ProjectState[];
+  pol: PoliticsState;
 }
 
 export interface Fiscal {

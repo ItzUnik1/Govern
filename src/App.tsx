@@ -5,7 +5,7 @@ import type { GameState } from './engine/types';
 import Build from './ui/Build';
 import Economy from './ui/Economy';
 import Government from './ui/Government';
-import { Briefing, ElectionModal, EventModal, GameOver } from './ui/Modals';
+import { Briefing, ElectionModal, EventModal, FormationModal, GameOver } from './ui/Modals';
 import More from './ui/More';
 import Overview from './ui/Overview';
 import Politics from './ui/Politics';
@@ -13,7 +13,7 @@ import Title from './ui/Title';
 import type { Ctx, Tab } from './ui/ctx';
 import { fmtPct } from './ui/common';
 
-type Modal = 'briefing' | 'election' | 'event';
+type Modal = 'briefing' | 'election' | 'formation' | 'event';
 const NAV: { id: Tab; ico: string; label: string }[] = [
   { id: 'overview', ico: '🏠', label: 'Overview' },
   { id: 'economy', ico: '📈', label: 'Economy' },
@@ -41,15 +41,16 @@ export default function App() {
     gameRef.current = next; setGame(next);
   }, []);
 
-  const start = (s: GameState) => { setGame(s); gameRef.current = s; setTab('overview'); setQueue([]); setShowLoad(false); saveAuto(s); };
+  const start = (s: GameState) => { setGame(s); gameRef.current = s; setTab('overview'); setQueue(s.pol?.pending ? ['formation'] : []); setShowLoad(false); saveAuto(s); };
 
   const advance = useCallback(() => {
-    const cur = gameRef.current; if (!cur || cur.pendingEvent || cur.gameOver) return;
+    const cur = gameRef.current; if (!cur || cur.pendingEvent || cur.gameOver || cur.pol.pending) return;
     const next = advanceMonth(cur);
     gameRef.current = next; setGame(next);
     saveAuto(next);
     const q: Modal[] = ['briefing'];
     if (next.lastElection) q.push('election');
+    if (next.pol.pending) q.push('formation');
     if (next.pendingEvent) q.push('event');
     setQueue(q);
   }, []);
@@ -88,7 +89,7 @@ export default function App() {
     <div className="app">
       <div className="topbar">
         <span className="flag">{c.flag}</span>
-        <div className="grow"><div className="t1">{c.name}</div><div className="t2">{c.title} · {dateLabel(game)}</div></div>
+        <div className="grow"><div className="t1">{c.name}</div><div className="t2">{game.pol.inGovernment ? c.title : 'Leader of the Opposition'} · {dateLabel(game)}</div></div>
         <span className="chip">👍 {fmtPct(game.approval, 0)}</span>
       </div>
       <div className="content" ref={contentRef}>
@@ -107,6 +108,7 @@ export default function App() {
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {top === 'briefing' && <Briefing s={game} onClose={closeModal} />}
       {top === 'election' && <ElectionModal s={game} onClose={closeModal} />}
+      {top === 'formation' && <FormationModal s={game} update={update} toast={toast} onDone={() => { const g = gameRef.current; if (g) saveAuto(g); closeModal(); setQueue(['election']); }} />}
       {top === 'event' && <EventModal key={game.turn} s={game} onChoose={chooseEvent} onClose={closeModal} />}
       {showOver && <GameOver s={game} onTitle={() => { setGame(null); gameRef.current = null; }} onLoad={() => setShowLoad(true)} />}
     </div>

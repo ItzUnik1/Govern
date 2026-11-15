@@ -21,12 +21,12 @@ const OUT = process.argv[2];
   await page.locator('.country-card', { hasText: 'Germany' }).click();
   await shot('03-detail');
   await click('Choose difficulty');
-  await click('Take office');
+  await click('Choose your party'); await click('Take office');
   must(await page.getByText('Chancellor').first().isVisible(), 'Germany leader title Chancellor');
   await shot('04-overview');
 
   // navigate all tabs
-  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['Build', 'Construction slots'], ['Politics', 'Election outlook'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
+  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['Build', 'Construction slots'], ['Politics', 'Approval history'], ['More', 'Save / Load'], ['Overview', 'Advance to']]) {
     await page.locator('.nav button', { hasText: label }).click();
     must(await page.getByText(check).first().isVisible(), `tab ${label} renders (${check})`);
   }
@@ -58,8 +58,14 @@ const OUT = process.argv[2];
     await page.getByText('Briefing').first().waitFor({ timeout: 3000 });
     if (i === 0) await shot('09-briefing');
     await page.locator('.sheet .btn', { hasText: 'Continue' }).click();
-    for (let k = 0; k < 4; k++) {
-      if (await page.locator('.choice').count()) {
+    for (let k = 0; k < 5; k++) {
+      if (await page.getByText('Form a government').count()) {
+        const first = page.locator('.sheet .choice').first();
+        while (await page.locator('.sheet .btn', { hasText: /Form (minority )?government/ }).isDisabled() && await first.count()) { await first.click(); break; }
+        const f = page.locator('.sheet .btn', { hasText: /Form (minority )?government/ });
+        if (await f.isEnabled()) await f.click(); else await page.getByText('Go into opposition').click();
+        await page.waitForTimeout(200);
+      } else if (await page.locator('.choice').count()) {
         events++;
         if (events === 1) await shot('10-event');
         await page.locator('.choice').first().click();

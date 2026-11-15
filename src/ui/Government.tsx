@@ -17,7 +17,31 @@ const TAX_NOTE: Record<TaxKey, string> = {
   vat: 'Broad, hard to evade. Raises prices once, and voters feel it.',
 };
 
-export default function Government({ s, update, toast }: Ctx) {
+export default function Government(ctx: Ctx) {
+  if (!ctx.s.pol.inGovernment) return <OppositionView {...ctx} />;
+  return <GovernmentInner {...ctx} />;
+}
+
+function OppositionView({ s }: Ctx) {
+  const c = getCountry(s); const f = fiscal(s);
+  return (
+    <>
+      <Card title="You are in opposition">
+        <div className="small">The government sets taxes, budgets and policies. You can watch the effects here and attack its record from the Politics tab.</div>
+      </Card>
+      <Card title="Government's budget (read-only)">
+        <div className="row between small"><span>Revenue</span><b>{fmtPct(f.revenuePct)} of GDP</b></div>
+        <div className="row between small"><span>Spending</span><b>{fmtPct(f.spendPct + f.interestPct)} of GDP</b></div>
+        <div className="row between small"><span>Deficit</span><b>{fmtPct(f.deficitPct)} of GDP</b></div>
+        <div className="row between small"><span>Debt</span><b>{fmtPct(debtPct(s), 0)} of GDP ({fmtMoney(s.debt)})</b></div>
+        <div className="row between small"><span>Income / corporate / VAT</span><b>{s.tax.incomeTax.toFixed(1)} / {s.tax.corpTax.toFixed(1)} / {s.tax.vat.toFixed(1)}%</b></div>
+        <div className="tiny muted">Start of your term: {c.tax0.incomeTax} / {c.tax0.corpTax} / {c.tax0.vat}%</div>
+      </Card>
+    </>
+  );
+}
+
+function GovernmentInner({ s, update, toast }: Ctx) {
   const [tab, setTab] = useState<'budget' | 'policies' | 'actions'>('budget');
   const c = getCountry(s);
   const f = fiscal(s);
