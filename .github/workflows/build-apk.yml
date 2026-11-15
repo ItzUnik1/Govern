@@ -50,7 +50,7 @@ jobs:
         run: |
           npm run typecheck
           npx tsx scripts/simtest.ts trace uk idle > /dev/null
-          npm run build
+          GOVERN_BUILD=${{ github.run_number }} npm run build
 
       - name: Add Android platform if missing, then sync web bundle into it
         run: |
@@ -88,7 +88,10 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: GOVERN build ${{ github.run_number }} (debug APK)
           body: |
-            Debug-signed APK, installable on Android phones (allow "install unknown apps" for your browser).
+            ${{ github.event.head_commit.message }}
+
+            ---
+            Debug-signed APK for Android 7+. Install over your old version to keep saves.
             Built from commit ${{ github.sha }}.
           prerelease: false
           make_latest: true

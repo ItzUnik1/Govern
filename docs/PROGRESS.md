@@ -78,3 +78,10 @@ Then Stage 3 (diplomacy, trade, projects/research), Stage 4 (content/balance), S
 - Real party names now used for all 8 countries (positions and shares remain approximations; leaders are generated people).
 - Event-created projects (foreign factory, landmark project, PPP, tech hub) are real `ProjectState` entries (`custom` field) that occupy construction slots. Foreign-financed ones cost the state little or nothing.
 - In opposition, starting/pausing/cancelling projects, research budget/techs and all diplomacy actions are refused (engine guard + disabled UI with a lock notice).
+
+## In-app updater (build 12)
+- `src/update.ts` checks `api.github.com/repos/ItzUnik1/Govern/releases/latest` (on launch after 2.5 s, at most every 6 h, or manually in Menu > Settings). Newer = release tag `build-N` with N > `__BUILD__` (injected by vite from `GOVERN_BUILD`; 0 in dev).
+- Native Capacitor plugin `ApkUpdaterPlugin.java` (registered in MainActivity) downloads the APK to cache/updates and launches the Android installer through the FileProvider. Needs the REQUEST_INSTALL_PACKAGES permission; if the user has not allowed installs from GOVERN, the plugin opens that settings page.
+- Updates install over the old app only because every build uses the same committed debug keystore. Never change it.
+- Failures (offline, API errors) are silent on the automatic check. The release body (commit message) is shown as the changelog.
+- NOT yet verified on a real device: download and installer hand-off.

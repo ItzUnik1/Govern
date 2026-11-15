@@ -12,6 +12,7 @@ import More from './ui/More';
 import Overview from './ui/Overview';
 import Politics from './ui/Politics';
 import Title from './ui/Title';
+import { UpdateBanner, UpdateSheet, useUpdater } from './ui/Update';
 import type { Ctx, Tab } from './ui/ctx';
 import { fmtPct } from './ui/common';
 
@@ -34,6 +35,8 @@ export default function App() {
   const [queue, setQueue] = useState<Modal[]>([]);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showLoad, setShowLoad] = useState(false);
+  const upd = useUpdater();
+  const [showUpd, setShowUpd] = useState(false);
   const gameRef = useRef<GameState | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   gameRef.current = game;
@@ -82,7 +85,13 @@ export default function App() {
   }, []);
 
   if (!game || showLoad) {
-    return <div className="app"><Title onStart={start} onLoad={start} /></div>;
+    return (
+      <div className="app">
+        <Title onStart={start} onLoad={start} />
+        <div className="upd-top"><UpdateBanner upd={upd} onOpen={() => setShowUpd(true)} /></div>
+        {showUpd && <UpdateSheet upd={upd} onClose={() => setShowUpd(false)} />}
+      </div>
+    );
   }
 
   const c = getCountry(game);
@@ -90,6 +99,7 @@ export default function App() {
     s: game, update, toast, go: goTo, sub, advance,
     openEvent: () => setQueue(['event']),
     openBriefing: () => setQueue(['briefing']),
+    upd, openUpdate: () => setShowUpd(true),
   };
   const quit = () => { setGame(null); gameRef.current = null; };
   const top = queue[0];
@@ -103,6 +113,7 @@ export default function App() {
         <span className="chip">👍 {fmtPct(game.approval, 0)}</span>
       </div>
       <div className="content" ref={contentRef}>
+        <UpdateBanner upd={upd} onOpen={() => setShowUpd(true)} />
         {tab === 'overview' && <Overview {...ctx} />}
         {tab === 'economy' && <Economy {...ctx} />}
         {tab === 'government' && <Government {...ctx} />}
@@ -115,10 +126,11 @@ export default function App() {
       </div>
       <div className="nav">
         {NAV.map((n) => (
-          <button key={n.id} className={tab === n.id || (n.id === 'menu' && MENU_PAGES.includes(tab)) ? 'on' : ''} onClick={() => goTo(n.id)}><span className="ico">{n.ico}</span>{n.label}</button>
+          <button key={n.id} className={tab === n.id || (n.id === 'menu' && MENU_PAGES.includes(tab)) ? 'on' : ''} onClick={() => goTo(n.id)}><span className="ico">{n.ico}{n.id === 'menu' && upd.status === 'available' && <i className="dot" />}</span>{n.label}</button>
         ))}
       </div>
       {toastMsg && <div className="toast">{toastMsg}</div>}
+      {showUpd && <UpdateSheet upd={upd} onClose={() => setShowUpd(false)} />}
       {top === 'briefing' && <Briefing s={game} onClose={closeModal} />}
       {top === 'election' && <ElectionModal s={game} onClose={closeModal} />}
       {top === 'formation' && <FormationModal s={game} update={update} toast={toast} onDone={() => { const g = gameRef.current; if (g) saveAuto(g); closeModal(); setQueue(['election']); }} />}

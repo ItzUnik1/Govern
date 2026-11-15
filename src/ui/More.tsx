@@ -4,6 +4,7 @@ import { getCountry, MONTHS } from '../engine/sim';
 import type { GameState } from '../engine/types';
 import { Card, Seg, Stars, fmtSigned } from './common';
 import type { Ctx } from './ctx';
+import { CURRENT_BUILD } from '../update';
 import { getTextSize, setTextSize, type TextSize } from './prefs';
 
 type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings';
@@ -16,20 +17,31 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
       {sub === 'save' && <SaveLoad {...p} />}
       {sub === 'brief' && <Brief {...p} />}
       {sub === 'help' && <Help />}
-      {sub === 'settings' && <Settings />}
+      {sub === 'settings' && <Settings {...p} />}
     </>
   );
 }
 
-function Settings() {
+function Settings({ upd, openUpdate }: Ctx) {
   const [sz, setSz] = useState<TextSize>(getTextSize());
   return (
+    <>
+    <Card title="App updates">
+      <div className="small">Installed: <b>build {CURRENT_BUILD || 'dev'}</b></div>
+      <div className="small muted" style={{ margin: '4px 0 8px' }}>
+        {upd.status === 'checking' ? 'Checking…' : upd.status === 'uptodate' ? 'You have the latest version.' : upd.status === 'error' ? upd.msg : upd.info ? `Build ${upd.info.build} is available.` : 'The game works offline. When you are online it can check for new versions.'}
+      </div>
+      {upd.info && (upd.status === 'available' || upd.status === 'downloading' || upd.status === 'ready')
+        ? <button className="btn" onClick={openUpdate}>View update</button>
+        : <button className="btn sec" disabled={upd.status === 'checking'} onClick={() => upd.check(true)}>Check for updates</button>}
+    </Card>
     <Card title="Text size">
       <Seg value={sz} onChange={(v) => { setSz(v); setTextSize(v); }} options={[{ id: 's', label: 'Small' }, { id: 'm', label: 'Default' }, { id: 'l', label: 'Large' }]} />
       <h2 style={{ marginTop: 14 }}>Prime Minister’s briefing</h2>
       <p className="small" style={{ marginTop: 4 }}>Growth is steady at 2.4%, inflation is easing, and approval holds at 46%. Preview text updates immediately.</p>
       <p className="tiny muted">The setting is stored on this device only.</p>
     </Card>
+    </>
   );
 }
 

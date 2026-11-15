@@ -163,3 +163,9 @@ ul.tight { margin: 4px 0 0; padding-left: 18px; } ul.tight li + li { margin-top:
 .menu-card .mc-pin.on { color: var(--warn); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .title-screen .logo { width: 220px; height: 220px; border-radius: 44px; box-shadow: 0 8px 30px rgba(0,0,0,.45); align-self: center; }
+
+/* In-app updater */
+.upd-banner { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: color-mix(in srgb, var(--accent-strong) 22%, var(--panel)); border: 1px solid var(--accent-strong); border-radius: var(--radius); padding: 10px 12px; color: var(--text); }
+.upd-top { position: absolute; top: calc(10px + var(--safe-t, 0px)); left: 12px; right: 12px; z-index: 30; }
+.nav .ico { position: relative; }
+.nav .ico .dot { position: absolute; top: 0; right: -4px; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); border: 2px solid var(--panel); box-sizing: content-box; }

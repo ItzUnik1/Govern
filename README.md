@@ -35,7 +35,7 @@ A political simulation for Android. Become Prime Minister (or President, or Chan
 4. If Play Protect says the app is unrecognised, choose **Install anyway**. GOVERN is not on the Play Store, so this is expected.
 5. Open **GOVERN** and start a new career.
 
-Updating: install the new APK over the old one. Your saves are kept. If Android refuses the update, uninstall first (this erases local saves).
+**Updating:** from build 12 on, GOVERN checks for new versions by itself when you are online. A banner appears; tap it, then *Download & install*. You can also use **Menu → Settings → Check for updates**. Otherwise, install the new APK over the old one. Your saves are kept. If Android refuses the update, uninstall first (this erases local saves).
 
 > **About the APK type:** the current files are *debug-signed* builds. They install and play normally, but they are not Play Store releases. A signed release build is planned for the final stage.
 
@@ -76,6 +76,7 @@ Updating: install the new APK over the old one. Your saves are kept. If Android 
 - **Survive events:** dozens of context-sensitive crises and opportunities with no obviously correct answer.
 - **Play for decades:** one turn is one month, a career can last many terms, and every term feeds your political legacy.
 - **Five save slots plus autosave**, all stored on your phone.
+- **In-app updates:** the game only goes online to look for a newer version (and never needs to).
 
 ### Playable countries
 
