@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { saveAuto } from './engine/save';
-import { advanceMonth, dateLabel, getCountry, resolveEvent } from './engine/sim';
+import { advanceMonth, debtPct, dateLabel, fiscal, MONTHS, getCountry, resolveEvent } from './engine/sim';
 import type { GameState } from './engine/types';
 import Build from './ui/Build';
 import World from './ui/World';
 import Economy from './ui/Economy';
 import Government from './ui/Government';
-import { Briefing, ElectionModal, EventModal, FormationModal, GameOver } from './ui/Modals';
+import { Briefing, PeriodModal, type PeriodSummary, ElectionModal, EventModal, FormationModal, GameOver } from './ui/Modals';
 import Menu from './ui/Menu';
 import More from './ui/More';
 import Overview from './ui/Overview';
@@ -20,7 +20,7 @@ import Coach from './ui/Coach';
 import { getFlag, setFlag } from './ui/prefs';
 import { play } from './ui/sound';
 
-type Modal = 'briefing' | 'election' | 'formation' | 'event';
+type Modal = 'briefing' | 'period' | 'election' | 'formation' | 'event';
 const NAV: { id: Tab; ico: string; label: string }[] = [
   { id: 'overview', ico: '🏠', label: 'Home' },
   { id: 'economy', ico: '📈', label: 'Economy' },
@@ -70,6 +70,33 @@ export default function App() {
     play(next.gameOver ? (next.gameOver.kind === 'retired' ? 'win' : 'lose') : next.pendingEvent ? 'alert' : 'advance');
   }, []);
 
+  const [period, setPeriod] = useState<PeriodSummary | null>(null);
+  /** Advance several months at once; pauses on any event, election, government formation or game end. */
+  const advanceMany = useCallback((n: number) => {
+    const start = gameRef.current; if (!start || start.pendingEvent || start.gameOver || start.pol.pending) return;
+    const snap = (g: GameState) => ({ approval: g.approval, stability: g.stability, gdp: g.gdp, growth: g.growth, inflation: g.inflation, unemployment: g.unemployment, debtPct: debtPct(g), balance: -fiscal(g).deficitPct });
+    const from = snap(start), startLabel = `${MONTHS[start.m]} ${start.y}`;
+    let cur: GameState = { ...start, flags: { ...start.flags, ff: 1 } }, done = 0, reason: string | null = null; const notes: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const next = advanceMonth(cur); done++; cur = next;
+      const r = next.lastReport;
+      if (r) for (const x of r.notes) notes.push(`${MONTHS[(r.m + 11) % 12].slice(0, 3)} ${r.m === 0 ? r.y - 1 : r.y}: ${x}`);
+      if (next.gameOver) { reason = 'The game has ended.'; break; }
+      if (next.lastElection) { reason = 'Election held.'; break; }
+      if (next.pol.pending) { reason = 'Government formation needs your decision.'; break; }
+      if (next.pendingEvent) { reason = 'An event needs your decision.'; break; }
+    }
+    delete cur.flags.ff;
+    gameRef.current = cur; setGame(cur); saveAuto(cur);
+    setPeriod({ requested: n, done, reason, startLabel, endLabel: `${MONTHS[(cur.m + 11) % 12]} ${cur.m === 0 ? cur.y - 1 : cur.y}`, from, to: snap(cur), notes: notes.slice(-14), totalNotes: notes.length });
+    const q: Modal[] = ['period'];
+    if (cur.lastElection) q.push('election');
+    if (cur.pol.pending) q.push('formation');
+    if (cur.pendingEvent) q.push('event');
+    setQueue(q);
+    play(cur.gameOver ? (cur.gameOver.kind === 'retired' ? 'win' : 'lose') : cur.pendingEvent ? 'alert' : 'advance');
+  }, []);
+
   const closeModal = () => setQueue((q) => q.slice(1));
   const chooseEvent = (i: number) => { update((s) => { resolveEvent(s, i); }); const g = gameRef.current; if (g) saveAuto(g); };
 
@@ -105,7 +132,7 @@ export default function App() {
 
   const c = getCountry(game);
   const ctx: Ctx = {
-    s: game, update, toast, go: goTo, sub, advance,
+    s: game, update, toast, go: goTo, sub, advance, advanceMany,
     openEvent: () => setQueue(['event']),
     openBriefing: () => setQueue(['briefing']),
     replayTutorial: () => setCoach(true),
@@ -143,6 +170,7 @@ export default function App() {
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {showUpd && <UpdateSheet upd={upd} onClose={() => setShowUpd(false)} />}
       {top === 'briefing' && <Briefing s={game} onClose={closeModal} />}
+      {top === 'period' && period && <PeriodModal p={period} onClose={closeModal} />}
       {top === 'election' && <ElectionModal s={game} onClose={closeModal} />}
       {top === 'formation' && <FormationModal s={game} update={update} toast={toast} onDone={() => { const g = gameRef.current; if (g) saveAuto(g); closeModal(); setQueue(['election']); }} />}
       {top === 'event' && <EventModal key={game.turn} s={game} onChoose={chooseEvent} onClose={closeModal} />}

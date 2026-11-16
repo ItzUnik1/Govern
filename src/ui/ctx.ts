@@ -12,6 +12,7 @@ export interface Ctx {
   /** Optional sub-page requested by the Menu hub (e.g. a Politics segment). */
   sub?: string;
   advance: () => void;
+  advanceMany: (n: number) => void;
   upd: Updater;
   openUpdate: () => void;
   openEvent: () => void;

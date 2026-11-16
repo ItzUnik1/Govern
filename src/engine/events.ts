@@ -5,6 +5,7 @@ import type { CountryDef, GameState, Modifier, SpendKey, StockKey, TaxKey } from
 import { coalSeats, confidenceVote, fallOfGovernment, genMinister, pdef, sysOf, totalSeats } from './politics';
 import { POSTS } from './parties';
 import { startEventProject, type EventProjectSpec } from './projects';
+import { OPPORTUNITY_EVENTS } from './opportunities';
 import { getNation, rivalNation, topPartner } from './diplomacy';
 
 export interface Fx {
@@ -598,6 +599,7 @@ EVENTS.push(
   },
 );
 
+EVENTS.push(...OPPORTUNITY_EVENTS);
 const BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
 export const getEvent = (id: string): EventDef | undefined => BY_ID.get(id);
 
@@ -611,7 +613,8 @@ export function drawEvent(s: GameState, c: CountryDef, rnd: () => number): strin
   const weights: [EventDef, number][] = [];
   for (const e of EVENTS) {
     if ((s.cooldowns[e.id] ?? 0) > 0) continue;
-    const w = Math.max(0, e.weight(s, c));
+    // fast-forward is calmer: routine events are much rarer, crises less so (elections and decisions still stop it)
+    const w = Math.max(0, e.weight(s, c)) * (s.flags.ff && e.category !== 'Crisis' ? 0.15 : 0.6);
     if (w > 0) { weights.push([e, w]); total += w; }
   }
   if (total <= 0) return null;

@@ -27,6 +27,11 @@ const OUT = process.argv[2];
   await click('Next', { exact: true }); await click('Next', { exact: true });
   await click('Skip', { exact: true });
   must((await page.locator('.coach').count()) === 0, 'tutorial skipped');
+  await page.getByRole('button', { name: /1 year/ }).click();
+  await page.waitForSelector('text=passed');
+  must(await page.getByText('passed').first().isVisible(), 'fast-forward summary shows');
+  await click('Continue', { exact: true });
+  if (await page.locator('.choice').count()) { await page.locator('.choice').first().click(); await page.getByText('Outcome').first().waitFor(); await page.locator('.sheet .btn', { hasText: 'Continue' }).click(); }
   await shot('04-overview');
 
   // navigate all tabs
@@ -60,7 +65,7 @@ const OUT = process.argv[2];
   await page.locator('.nav button', { hasText: 'Home' }).click();
   let months = 0, events = 0, elections = 0;
   for (let i = 0; i < 60; i++) {
-    const adv = page.locator('.advance .btn');
+    const adv = page.locator('.advance .btn').first();
     if (await page.getByText('Forced out').count() || await page.getByText('Defeated').count()) break;
     if (await adv.isDisabled()) break;
     await adv.click(); months++;

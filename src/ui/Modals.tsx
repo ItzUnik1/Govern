@@ -32,6 +32,37 @@ export function Briefing({ s, onClose }: { s: GameState; onClose: () => void }) 
   );
 }
 
+export interface PeriodSummary {
+  requested: number; done: number; reason: string | null; startLabel: string; endLabel: string;
+  from: Record<string, number>; to: Record<string, number>; notes: string[]; totalNotes: number;
+}
+const PERIOD_ROWS: { k: string; label: string; unit: string; dp: number; goodUp: boolean }[] = [
+  { k: 'approval', label: 'Approval', unit: '%', dp: 0, goodUp: true }, { k: 'stability', label: 'Stability', unit: '', dp: 0, goodUp: true },
+  { k: 'growth', label: 'GDP growth', unit: '%', dp: 1, goodUp: true }, { k: 'inflation', label: 'Inflation', unit: '%', dp: 1, goodUp: false },
+  { k: 'unemployment', label: 'Unemployment', unit: '%', dp: 1, goodUp: false }, { k: 'debtPct', label: 'Debt / GDP', unit: '%', dp: 0, goodUp: false },
+  { k: 'balance', label: 'Budget balance', unit: '%', dp: 1, goodUp: true },
+];
+export function PeriodModal({ p, onClose }: { p: PeriodSummary; onClose: () => void }) {
+  const gdpCh = ((p.to.gdp / p.from.gdp) - 1) * 100;
+  return (
+    <div className="overlay"><div className="sheet">
+      <h2>⏩ {p.done} month{p.done > 1 ? 's' : ''} passed</h2>
+      <div className="small muted">{p.startLabel} to {p.endLabel}{p.done < p.requested ? ` · paused (${p.done} of ${p.requested})` : ''}</div>
+      {p.reason && <div className="adv warn">⏸ <span>{p.reason}</span></div>}
+      <div>
+        <div className="delta"><span>GDP</span><span><b>{gdpCh >= 0 ? '+' : ''}{gdpCh.toFixed(1)}%</b> <span className="small muted">over the period (nominal)</span></span></div>
+        {PERIOD_ROWS.map((r) => {
+          const ch = p.to[r.k] - p.from[r.k]; const dir = Math.abs(ch) < 0.05 ? '' : (ch > 0) === r.goodUp ? 'good' : 'bad';
+          return <div className="delta" key={r.k}><span>{r.label}</span><span><b>{p.to[r.k].toFixed(r.dp)}{r.unit}</b> <span className={dir}>({ch >= 0 ? '+' : ''}{ch.toFixed(r.dp)})</span></span></div>;
+        })}
+      </div>
+      {p.notes.length > 0 && <div className="eyebrow" style={{ marginTop: 10 }}>What happened{p.totalNotes > p.notes.length ? ` (latest ${p.notes.length} of ${p.totalNotes})` : ''}</div>}
+      {p.notes.map((n, i) => <div key={i} className="adv warn">⚠️ <span>{n}</span></div>)}
+      <button className="btn" onClick={onClose}>Continue</button>
+    </div></div>
+  );
+}
+
 export function EventModal({ s, onChoose, onClose }: { s: GameState; onChoose: (i: number) => void; onClose: () => void }) {
   const [chosen, setChosen] = useState(false);
   const c = getCountry(s);

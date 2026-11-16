@@ -58,3 +58,6 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 - The update banner on the title screen floats over the country list
 
 - Rival AI (Stage 8 extra): `src/engine/rivalai.ts`. Foreign governments score moves (trade/alliance/aid/demand/summit offers, sanctions, world news) and the lead opposition party attacks, poaches coalition partners and builds no-confidence momentum. Test: `npx tsx scripts/aitest.ts`. Offers answered in World tab; opposition card in Politics > Parliament.
+
+- Opportunities (`src/engine/opportunities.ts`): gas find, tourism surge, bumper harvest, breakthrough, global event bid, credit upgrade, remittances, market access. Each costs money or a construction slot to exploit.
+- Fast-forward: Overview has 6-month and 1-year buttons (`advanceMany` in App.tsx). Pauses on events, elections, formation and game end; routine events are rarer while fast-forwarding (`flags.ff`, drawEvent).

@@ -4,7 +4,7 @@ import { Bar, Card, Stat, fmtMoney, fmtPct, fmtSigned, stability_label, toneFor 
 import { defOf, eta } from '../engine/projects';
 import type { Ctx } from './ctx';
 
-export default function Overview({ s, advance, openEvent, openBriefing, go }: Ctx) {
+export default function Overview({ s, advance, advanceMany, openEvent, openBriefing, go }: Ctx) {
   const c = getCountry(s);
   const f = fiscal(s);
   const adv = advisories(s);
@@ -73,7 +73,11 @@ export default function Overview({ s, advance, openEvent, openBriefing, go }: Ct
         <button className="btn" onClick={advance} disabled={!!s.pendingEvent || !!s.gameOver}>
           {s.pendingEvent ? 'Resolve the event first' : `Advance to ${nextM} ▶`}
         </button>
-        <div className="tiny muted" style={{ textAlign: 'center', marginTop: 4 }}>{dateLabel(s)} · {c.title}</div>
+        <div className="row" style={{ marginTop: 6 }}>
+          <button className="btn sec small" style={{ flex: 1 }} onClick={() => advanceMany(6)} disabled={!!s.pendingEvent || !!s.gameOver}>6 months ⏩</button>
+          <button className="btn sec small" style={{ flex: 1 }} onClick={() => advanceMany(12)} disabled={!!s.pendingEvent || !!s.gameOver}>1 year ⏩</button>
+        </div>
+        <div className="tiny muted" style={{ textAlign: 'center', marginTop: 4 }}>Fast-forward is calmer and pauses for any decision or election · {dateLabel(s)} · {c.title}</div>
       </div>
     </>
   );
