@@ -78,3 +78,13 @@ one-off costs (% of GDP) and timed *modifiers* (shown under History → Active e
 
 ## Balance targets (verified by `npm run test:sim`, `scripts/botprobe.ts`)
 Idle play loses early elections; a competent budget-balancing bot wins ~80-87% of elections and survives 20 years ~40-50% of the time on Standard.
+
+
+## Budget realism (Stage 4 realism pass)
+- **Automatic stabilisers:** unemployment support costs `0.12 x (unemployment - starting unemployment) x welfare/12` % of GDP (range -0.5..+1.5). Revenue also moves with jobs (the existing cyclical factor).
+- **Ageing:** pension and health costs creep up `agingDrag x 0.11` % of GDP per year; the Pension Reform bill halves this.
+- **Primary balance and interest share** are shown on the Budget screen (r versus g is what drives debt dynamics).
+- **Eurozone (Germany, France, Italy):** the central bank reacts mostly (75%) to the euro-area average, not to the country's own inflation and growth. The deficit-to-inflation channel is damped to 40% because the country cannot print money.
+- **Deficit-to-inflation channel** is scaled by `(1 - 0.4 x debtTolerance)`: credible, high-demand currencies (Japan, US, Germany) see less inflation from deficits than weak ones.
+- **Sovereign debt crisis event:** triggers when debt is above 95% (weak credit), 130% (medium) or 170% (strong credit) of GDP and the interest bill exceeds 3.5% of GDP. Choices: rescue programme, restructuring, self-imposed austerity, or central-bank financing (not for euro members). This stops unrealistic debt spirals.
+- `scripts/audit.ts` runs a sensible bot for 30 years in every country and prints decade snapshots to compare against real-world bands.

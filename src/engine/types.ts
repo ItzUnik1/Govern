@@ -301,6 +301,12 @@ export interface Fiscal {
   spendPct: number; // program spending + running costs of standing policies
   programCostPct: number;
   interestPct: number;
+  /** Automatic unemployment-related costs (% of GDP); negative when jobs are plentiful. */
+  stabiliserPct: number;
+  /** Pension and health costs created by an ageing population (% of GDP). */
+  ageingPct: number;
+  /** Balance before interest (% of GDP; positive = deficit). */
+  primaryDeficitPct: number;
   deficitPct: number;
   revenueM: number;
   spendingM: number;

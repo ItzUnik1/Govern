@@ -347,6 +347,22 @@ export const EVENTS: EventDef[] = [
     ],
   },
   {
+    id: 'sovereignCrisis', title: 'Sovereign debt crisis', icon: '🚨', category: 'Economy', cooldown: 84,
+    weight: (s, c) => {
+      const d = debtPct(s);
+      const limit = c.debtTolerance > 0.7 ? 170 : c.debtTolerance > 0.3 ? 130 : 95;
+      const interestPct = (s.debt * s.avgCost) / s.gdp;
+      return d > limit && interestPct > 3.5 ? 2.5 + (d - limit) / 40 : 0;
+    },
+    text: (s) => `Investors have stopped lending at affordable rates. Debt is ${debtPct(s).toFixed(0)}% of GDP, the interest bill is swallowing the budget and the next bond auction may fail.`,
+    choices: [
+      { label: 'Negotiate a rescue programme', hint: 'Cheap loans and relief; strict conditions', run: (fx) => { fx.cost(-6); fx.tax('vat', 1.5); fx.spend('administration', -0.3); fx.spend('welfare', -0.4); fx.approval(-9); fx.stability(-4); fx.mod('Rescue programme', 36, { growth: -0.5, confidence: 6, approval: -0.5 }); return 'Lenders step in. Borrowing costs fall, but the conditions bite for years.'; } },
+      { label: 'Restructure the debt', hint: 'Cuts debt by a fifth; markets will not forget', run: (fx) => { const d = debtPct(fx.s); fx.cost(-0.2 * d); fx.confidence(-15); fx.currency(-12); fx.approval(-4); fx.mod('Default stigma', 60, { confidence: -4, growth: -0.3, revenuePct: -0.3 }); return 'Creditors take losses. Debt falls sharply, but access to cheap credit is gone for years.'; } },
+      { label: 'Self-imposed austerity', hint: 'Big cuts and tax rises; protects your independence', run: (fx) => { fx.tax('vat', 2); fx.tax('incomeTax', 1); fx.spend('welfare', -0.6); fx.spend('administration', -0.4); fx.spend('infrastructure', -0.3); fx.approval(-12); fx.stability(-5); fx.mod('Austerity drag', 30, { growth: -0.7, unemployment: 0.5, confidence: 4 }); return 'A harsh budget calms markets, at a heavy political and social price.'; } },
+      { label: 'Let the central bank finance it', hint: 'Fast relief; inflation and a weaker currency', available: (_s, c) => !['germany', 'france', 'italy'].includes(c.id), run: (fx) => { const d = debtPct(fx.s); fx.cost(-0.1 * d); fx.inflation(5); fx.currency(-10); fx.confidence(-6); fx.mod('Monetary financing', 36, { inflation: 2 }); return 'The money presses roll. The debt eases, but prices and the currency pay for it.'; } },
+    ],
+  },
+  {
     id: 'aidOffer', title: 'Foreign aid offer', icon: '🤝', category: 'Diplomacy', cooldown: 30,
     weight: (_s, c) => (rich(c) ? 0 : 0.6),
     text: () => 'Donors are offering a substantial development package, with conditions on governance reforms.',

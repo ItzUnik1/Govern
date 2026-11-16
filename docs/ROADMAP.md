@@ -18,6 +18,19 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 - [ ] Performance pass on long games (60+ years), save size check
 - [ ] Update docs/SIMULATION.md and README for Stages 2-4
 
+## Realism pass (user priority: economy and budget first)
+- [x] Realism audit tool (`scripts/audit.ts`)
+- [x] Automatic stabilisers, ageing costs, primary balance and interest share on the budget screen
+- [x] Shared eurozone interest rate, damped deficit-inflation channel
+- [x] Sovereign debt crisis event (rescue, restructure, austerity, central-bank financing)
+- [ ] Debt maturity structure (short vs long bonds, refinancing risk)
+- [ ] Central bank: independence slider and inflation expectations
+- [ ] Exchange-rate regimes (float, peg, euro) and a proper balance-of-payments crisis
+- [ ] Wage-price dynamics and a clearer business cycle (recession/boom phases)
+- [ ] Structural vs cyclical deficit and an output gap measure
+- [ ] Tax realism: tax lags, avoidance, informal economy by development level
+- [ ] Re-run `scripts/audit.ts` after each change and compare with real-world bands
+
 ## Stage 5: living world and scenarios
 - [ ] AI nations that act on their own (alliances, trade wars, crises that start without you)
 - [ ] Starting scenarios and historic starts (e.g. debt crisis, post-war rebuilding, new republic)

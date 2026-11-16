@@ -156,13 +156,25 @@ export default function Economy({ s }: Ctx) {
             <StackBar parts={[
               ...(['education', 'health', 'infrastructure', 'defence', 'welfare', 'administration'] as const).map((k, i) => ({ label: SPEND_LABELS[k].split(' ')[0], value: s.spend[k], color: ['#4f8cff', '#ff6b6b', '#f5b84b', '#8d9bb8', '#34c88a', '#b48cff'][i] })),
               { label: 'Interest', value: f.interestPct, color: '#e0a3ff' },
+              ...(f.ageingPct + Math.max(0, f.stabiliserPct) > 0.02 ? [{ label: 'Automatic', value: f.ageingPct + Math.max(0, f.stabiliserPct), color: '#8d9bb8' }] : []),
               ...(f.programCostPct > 0 ? [{ label: 'Programmes', value: f.programCostPct, color: '#7ad7c9' }] : []),
             ]} />
           </Card>
+          {(Math.abs(f.stabiliserPct) > 0.03 || f.ageingPct > 0.03) && (
+            <div className="card small">
+              <b>Automatic costs</b>
+              <div className="muted" style={{ marginTop: 4 }}>
+                {Math.abs(f.stabiliserPct) > 0.03 && <div>Unemployment support: {fmtSigned(f.stabiliserPct)}% of GDP vs the starting level (it rises in a downturn and falls in a boom).</div>}
+                {f.ageingPct > 0.03 && <div>Ageing population: +{f.ageingPct.toFixed(2)}% of GDP in pension and health costs{s.flags.pensionReform ? ' (halved by pension reform)' : ''}. Pension reform or growth can offset it.</div>}
+              </div>
+            </div>
+          )}
           <div className="grid2">
             <Stat label="Deficit / surplus" value={`${fmtSigned(-f.deficitPct)}% GDP`} sub={`${fmtMoney(f.balanceM)} per month`} cls={f.deficitPct > 0 ? 'warn' : 'good'} />
             <Stat label="National debt" value={fmtMoney(s.debt)} sub={`${fmtPct(debtPct(s), 0)} of GDP`} />
             <Stat label="Interest bill" value={fmtPct(f.interestPct)} sub={`of GDP · ${fmtMoney(f.interestM * 12)}/yr`} cls={f.interestPct > 4.5 ? 'warn' : ''} />
+            <Stat label="Before interest" value={`${fmtSigned(-f.primaryDeficitPct)}% GDP`} sub={f.primaryDeficitPct > 0 ? 'primary deficit' : 'primary surplus'} cls={f.primaryDeficitPct > 0 ? 'warn' : 'good'} />
+            <Stat label="Interest vs revenue" value={`${(f.interestPct / Math.max(0.1, f.revenuePct) * 100).toFixed(0)}%`} sub={`of revenue goes to interest`} cls={f.interestPct / Math.max(0.1, f.revenuePct) > 0.12 ? 'warn' : ''} />
             <Stat label="Last month actual" value={fmtMoney(s.revenueM - s.spendingM)} sub="incl. one-off costs" />
           </div>
         </>

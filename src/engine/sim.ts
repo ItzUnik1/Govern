@@ -150,7 +150,11 @@ export function fiscal(s: GameState): Fiscal {
   const revenuePct = income + corp + vat + other + extra;
   const programSpend = Object.values(s.spend).reduce((a, b) => a + b, 0);
   const progCost = programCostPct(s) + projectCostPct(s) + researchCostPct(s);
-  const spendPct = programSpend + progCost;
+  // Automatic costs the government does not choose: unemployment support rises in a downturn and falls in a boom,
+  // and an ageing population slowly raises pension and health bills unless pensions are reformed.
+  const stabiliserPct = clamp(0.12 * (s.unemployment - c.unemployment0) * (c.spend0.welfare / 12), -0.5, 1.5);
+  const ageingPct = c.agingDrag * 0.11 * (s.turn / 12) * (s.flags.pensionReform ? 0.5 : 1);
+  const spendPct = programSpend + progCost + stabiliserPct + ageingPct;
   const interestAnnual = (s.debt * s.avgCost) / 100;
   const interestPct = (interestAnnual / s.gdp) * 100;
   const deficitPct = spendPct + interestPct - revenuePct;
@@ -158,7 +162,7 @@ export function fiscal(s: GameState): Fiscal {
   const interestM = interestAnnual / 12;
   const spendingM = (spendPct / 100) * (s.gdp / 12) + interestM;
   return {
-    revenuePct, spendPct, programCostPct: progCost, interestPct, deficitPct,
+    revenuePct, spendPct, programCostPct: progCost, interestPct, stabiliserPct, ageingPct, primaryDeficitPct: deficitPct - interestPct, deficitPct,
     taxLines: [
       { key: 'incomeTax', label: 'Income tax', pct: income },
       { key: 'corpTax', label: 'Corporate tax', pct: corp },
@@ -170,8 +174,12 @@ export function fiscal(s: GameState): Fiscal {
   };
 }
 
-const rateRule = (s: GameState, c: CountryDef, infl: number, g: number) =>
-  Math.max(c.rateFloor, c.neutralRate + 1.2 * (infl - c.inflationTarget) + 0.3 * (g - c.potentialGrowth));
+/** Eurozone members share one central bank: it reacts mostly to the area average, only ~25% to this country. */
+const EURO = ['germany', 'france', 'italy'];
+const rateRule = (s: GameState, c: CountryDef, infl: number, g: number) => {
+  if (EURO.includes(c.id)) { infl = c.inflationTarget + 0.25 * (infl - c.inflationTarget); g = c.potentialGrowth + 0.25 * (g - c.potentialGrowth); }
+  return Math.max(c.rateFloor, c.neutralRate + 1.2 * (infl - c.inflationTarget) + 0.3 * (g - c.potentialGrowth));
+};
 
 export function borrowingRate(s: GameState): number {
   const c = getCountry(s);
@@ -361,7 +369,7 @@ export function advanceMonth(input: GameState): GameState {
   s.growth = clamp(0.65 * s.growth + 0.35 * gTarget, -12, 12);
 
   // --- 4. Inflation ---
-  const pressure = 0.25 * (s.growth - c.potentialGrowth) + 0.18 * Math.max(0, f.deficitPct - Math.max(3, c.deficitPct0)) + c.fuelImports * 0.012 * (s.commodity - 100) + 0.02 * c.openness * (100 - s.currency) - 0.15 * (s.policyRate - rule0) + mod2.inflation + pe.inflation;
+  const pressure = 0.25 * (s.growth - c.potentialGrowth) + 0.18 * (1 - 0.4 * c.debtTolerance) * (EURO.includes(c.id) ? 0.4 : 1) * Math.max(0, f.deficitPct - Math.max(3, c.deficitPct0)) + c.fuelImports * 0.012 * (s.commodity - 100) + 0.02 * c.openness * (100 - s.currency) - 0.15 * (s.policyRate - rule0) + mod2.inflation + pe.inflation;
   s.inflation = clamp(s.inflation + 0.06 * (c.inflationTarget - s.inflation) + pressure / 12 + 0.06 * diff.economy * normal(rnd), -3, 80);
 
   // --- 5. Unemployment ---
