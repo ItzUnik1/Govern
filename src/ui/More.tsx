@@ -5,9 +5,11 @@ import type { GameState } from '../engine/types';
 import { Card, Seg, Stars, fmtSigned } from './common';
 import type { Ctx } from './ctx';
 import { CURRENT_BUILD } from '../update';
-import { getTextSize, setTextSize, type TextSize } from './prefs';
+import { getFlag, getTextSize, getTheme, setFlag, setTextSize, setTheme, type TextSize, type Theme } from './prefs';
+import { Advisers, Stats } from './Insights';
+import { play } from './sound';
 
-type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings';
+type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings' | 'stats' | 'advisers';
 
 export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: () => void }) {
   const sub = (p.sub as Sub) || 'history';
@@ -16,7 +18,9 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
       {sub === 'history' && <History {...p} />}
       {sub === 'save' && <SaveLoad {...p} />}
       {sub === 'brief' && <Brief {...p} />}
-      {sub === 'help' && <Help />}
+      {sub === 'help' && <Help {...p} />}
+      {sub === 'stats' && <Stats {...p} />}
+      {sub === 'advisers' && <Advisers {...p} />}
       {sub === 'settings' && <Settings {...p} />}
     </>
   );
@@ -24,8 +28,17 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
 
 function Settings({ upd, openUpdate }: Ctx) {
   const [sz, setSz] = useState<TextSize>(getTextSize());
+  const [th, setTh] = useState<Theme>(getTheme());
+  const [snd, setSnd] = useState(getFlag('sound', true));
   return (
     <>
+    <Card title="Appearance & sound">
+      <div className="eyebrow">Theme</div>
+      <Seg value={th} onChange={(v) => { setTh(v); setTheme(v); }} options={[{ id: 'dark', label: 'Dark' }, { id: 'light', label: 'Light' }, { id: 'contrast', label: 'High contrast' }]} />
+      <div className="eyebrow" style={{ marginTop: 12 }}>Sound effects</div>
+      <Seg value={snd ? 'on' : 'off'} onChange={(v) => { setSnd(v === 'on'); setFlag('sound', v === 'on'); if (v === 'on') play('advance'); }} options={[{ id: 'on', label: 'On' }, { id: 'off', label: 'Off' }]} />
+      <p className="tiny muted">Short synthesised tones; no files are downloaded. Stored on this device only.</p>
+    </Card>
     <Card title="App updates">
       <div className="small">Installed: <b>build {CURRENT_BUILD || 'dev'}</b></div>
       <div className="small muted" style={{ margin: '4px 0 8px' }}>
@@ -146,7 +159,7 @@ function Brief({ s }: Ctx) {
   );
 }
 
-function Help() {
+function Help({ replayTutorial }: Ctx) {
   const sec: [string, string][] = [
     ['Monthly turn', 'Each press of Advance Month calculates revenue and spending, updates debt, growth, inflation, jobs, the currency, confidence, approval and stability, then may trigger an event.'],
     ['Growth', 'Starts from your country\'s potential. Rises with better education, health, infrastructure and government efficiency (slowly), investor confidence and stability; falls with higher taxes, high interest rates and heavy debt. A sudden increase in the deficit gives a temporary boost; a permanent deficit does not.'],
@@ -158,5 +171,5 @@ function Help() {
     ['Elections', 'Vote share depends mainly on approval and stability at election time plus a random swing. The bar rises with each term. Lose and your career ends; some countries have term limits.'],
     ['Events', 'Events depend on conditions (e.g. inflation crises appear when inflation is high). Every choice has trade-offs and many have lasting effects – check Active Effects.'],
   ];
-  return <>{sec.map(([t, d]) => <Card key={t} title={t}><div className="small">{d}</div></Card>)}</>;
+  return <><button className="btn sec" onClick={replayTutorial}>▶ Replay the tutorial</button>{sec.map(([t, d]) => <Card key={t} title={t}><div className="small">{d}</div></Card>)}</>;
 }

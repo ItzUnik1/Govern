@@ -35,4 +35,19 @@ export function togglePin(id: string): string[] {
   return next;
 }
 
-export function initPrefs() { applyTextSize(getTextSize()); }
+export type Theme = 'dark' | 'light' | 'contrast';
+export function getTheme(): Theme {
+  try { const v = localStorage.getItem('govern.theme'); if (v === 'dark' || v === 'light' || v === 'contrast') return v; } catch { /* ignore */ }
+  return 'dark';
+}
+export function setTheme(t: Theme) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('govern.theme', t); } catch { /* ignore */ }
+}
+export function getFlag(k: string, dflt: boolean): boolean {
+  try { const v = localStorage.getItem('govern.' + k); if (v === '1') return true; if (v === '0') return false; } catch { /* ignore */ }
+  return dflt;
+}
+export function setFlag(k: string, v: boolean) { try { localStorage.setItem('govern.' + k, v ? '1' : '0'); } catch { /* ignore */ } }
+
+export function initPrefs() { applyTextSize(getTextSize()); document.documentElement.dataset.theme = getTheme(); }

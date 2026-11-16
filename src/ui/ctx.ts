@@ -16,4 +16,5 @@ export interface Ctx {
   openUpdate: () => void;
   openEvent: () => void;
   openBriefing: () => void;
+  replayTutorial: () => void;
 }

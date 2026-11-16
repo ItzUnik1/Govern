@@ -19,12 +19,14 @@ export const MENU: Group[] = [
     { id: 'research', ico: '🔬', title: 'Research', desc: 'R&D budget and techs', tab: 'build', sub: 'research' },
   ] },
   { title: 'Records', items: [
+    { id: 'advisers', ico: '🧭', title: 'Advisers', desc: 'Treasury, politics, foreign', tab: 'more', sub: 'advisers' },
+    { id: 'stats', ico: '📊', title: 'Statistics', desc: 'Trends since day one', tab: 'more', sub: 'stats' },
     { id: 'history', ico: '📈', title: 'History & reports', desc: 'Monthly reports and effects', tab: 'more', sub: 'history' },
     { id: 'brief', ico: '🌐', title: 'Country briefing', desc: 'Constitution and challenges', tab: 'more', sub: 'brief' },
   ] },
   { title: 'Game', items: [
     { id: 'save', ico: '💾', title: 'Save / Load', desc: 'Five slots plus autosave', tab: 'more', sub: 'save' },
-    { id: 'settings', ico: '⚙️', title: 'Settings', desc: 'Text size', tab: 'more', sub: 'settings' },
+    { id: 'settings', ico: '⚙️', title: 'Settings', desc: 'Theme, sound, text', tab: 'more', sub: 'settings' },
     { id: 'help', ico: '❓', title: 'How it works', desc: 'Formulas in plain language', tab: 'more', sub: 'help' },
   ] },
 ];

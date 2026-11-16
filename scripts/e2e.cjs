@@ -23,10 +23,14 @@ const OUT = process.argv[2];
   await click('Choose difficulty');
   await click('Choose your party'); await click('Take office');
   must(await page.getByText('Chancellor').first().isVisible(), 'Germany leader title Chancellor');
+  must(await page.locator('.coach').isVisible(), 'tutorial shows on first game');
+  await click('Next', { exact: true }); await click('Next', { exact: true });
+  await click('Skip', { exact: true });
+  must((await page.locator('.coach').count()) === 0, 'tutorial skipped');
   await shot('04-overview');
 
   // navigate all tabs
-  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Menu:Projects', 'Construction slots'], ['Menu:Parliament', 'Approval history'], ['Menu:Laws & bills', 'Laws'], ['Menu:Cabinet', 'Cabinet'], ['Menu:Research', 'R&D budget'], ['Menu:Save / Load', 'Slot 1'], ['Menu:History & reports', 'Month'], ['Menu:Settings', 'Text size'], ['Home', 'Advance to']]) {
+  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Menu:Projects', 'Construction slots'], ['Menu:Parliament', 'Approval history'], ['Menu:Laws & bills', 'Laws'], ['Menu:Cabinet', 'Cabinet'], ['Menu:Research', 'R&D budget'], ['Menu:Save / Load', 'Slot 1'], ['Menu:History & reports', 'Month'], ['Menu:Settings', 'Text size'], ['Menu:Advisers', 'Treasury adviser'], ['Menu:Statistics', 'Since you took office'], ['Home', 'Advance to']]) {
     if (label.startsWith('Menu:')) {
       await page.locator('.nav button', { hasText: 'Menu' }).click();
       await page.locator('.menu-card .mc-main', { hasText: label.slice(5) }).first().click();

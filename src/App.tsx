@@ -16,6 +16,9 @@ import Title from './ui/Title';
 import { UpdateBanner, UpdateSheet, useUpdater } from './ui/Update';
 import type { Ctx, Tab } from './ui/ctx';
 import { fmtPct } from './ui/common';
+import Coach from './ui/Coach';
+import { getFlag, setFlag } from './ui/prefs';
+import { play } from './ui/sound';
 
 type Modal = 'briefing' | 'election' | 'formation' | 'event';
 const NAV: { id: Tab; ico: string; label: string }[] = [
@@ -37,6 +40,7 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showLoad, setShowLoad] = useState(false);
   const [booting, setBooting] = useState(true);
+  const [coach, setCoach] = useState(false);
   const upd = useUpdater();
   const [showUpd, setShowUpd] = useState(false);
   const gameRef = useRef<GameState | null>(null);
@@ -51,7 +55,7 @@ export default function App() {
     gameRef.current = next; setGame(next);
   }, []);
 
-  const start = (s: GameState) => { setGame(s); gameRef.current = s; goTo('overview'); setQueue(s.pol?.pending ? ['formation'] : []); setShowLoad(false); saveAuto(s); };
+  const start = (s: GameState) => { setGame(s); gameRef.current = s; goTo('overview'); setQueue(s.pol?.pending ? ['formation'] : []); setShowLoad(false); saveAuto(s); if (!getFlag('tutorialSeen', false)) setCoach(true); };
 
   const advance = useCallback(() => {
     const cur = gameRef.current; if (!cur || cur.pendingEvent || cur.gameOver || cur.pol.pending) return;
@@ -63,6 +67,7 @@ export default function App() {
     if (next.pol.pending) q.push('formation');
     if (next.pendingEvent) q.push('event');
     setQueue(q);
+    play(next.gameOver ? (next.gameOver.kind === 'retired' ? 'win' : 'lose') : next.pendingEvent ? 'alert' : 'advance');
   }, []);
 
   const closeModal = () => setQueue((q) => q.slice(1));
@@ -103,6 +108,7 @@ export default function App() {
     s: game, update, toast, go: goTo, sub, advance,
     openEvent: () => setQueue(['event']),
     openBriefing: () => setQueue(['briefing']),
+    replayTutorial: () => setCoach(true),
     upd, openUpdate: () => setShowUpd(true),
   };
   const quit = () => { setGame(null); gameRef.current = null; };
@@ -133,6 +139,7 @@ export default function App() {
           <button key={n.id} className={tab === n.id || (n.id === 'menu' && MENU_PAGES.includes(tab)) ? 'on' : ''} onClick={() => goTo(n.id)}><span className="ico">{n.ico}{n.id === 'menu' && upd.status === 'available' && <i className="dot" />}</span>{n.label}</button>
         ))}
       </div>
+      {coach && <Coach go={goTo} onDone={() => { setCoach(false); setFlag('tutorialSeen', true); }} />}
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {showUpd && <UpdateSheet upd={upd} onClose={() => setShowUpd(false)} />}
       {top === 'briefing' && <Briefing s={game} onClose={closeModal} />}
