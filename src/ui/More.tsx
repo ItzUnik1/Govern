@@ -5,7 +5,7 @@ import type { GameState } from '../engine/types';
 import { Card, Seg, Stars, fmtSigned } from './common';
 import type { Ctx } from './ctx';
 import { CURRENT_BUILD } from '../update';
-import { getFlag, getTextSize, getTheme, setFlag, setTextSize, setTheme, type TextSize, type Theme } from './prefs';
+import { getFlag, getOrient, getTextSize, getTheme, setFlag, setOrient, setTextSize, setTheme, type Orient, type TextSize, type Theme } from './prefs';
 import { Advisers, Stats } from './Insights';
 import Inbox from './Inbox';
 import { play } from './sound';
@@ -31,12 +31,16 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
 function Settings({ upd, openUpdate }: Ctx) {
   const [sz, setSz] = useState<TextSize>(getTextSize());
   const [th, setTh] = useState<Theme>(getTheme());
+  const [or, setOr] = useState<Orient>(getOrient());
   const [snd, setSnd] = useState(getFlag('sound', true));
   return (
     <>
     <Card title="Appearance & sound">
       <div className="eyebrow">Theme</div>
       <Seg value={th} onChange={(v) => { setTh(v); setTheme(v); }} options={[{ id: 'dark', label: 'Dark' }, { id: 'light', label: 'Light' }, { id: 'contrast', label: 'High contrast' }]} />
+      <div className="eyebrow" style={{ marginTop: 12 }}>Screen orientation</div>
+      <Seg value={or} onChange={(v) => { setOr(v); setOrient(v); }} options={[{ id: 'auto', label: 'Auto' }, { id: 'portrait', label: 'Portrait' }, { id: 'landscape', label: 'Landscape' }]} />
+      <p className="tiny muted">Auto follows your phone's rotation. Portrait and Landscape lock the game to that orientation (Android app).</p>
       <div className="eyebrow" style={{ marginTop: 12 }}>Sound effects</div>
       <Seg value={snd ? 'on' : 'off'} onChange={(v) => { setSnd(v === 'on'); setFlag('sound', v === 'on'); if (v === 'on') play('advance'); }} options={[{ id: 'on', label: 'On' }, { id: 'off', label: 'Off' }]} />
       <p className="tiny muted">Short synthesised tones; no files are downloaded. Stored on this device only.</p>

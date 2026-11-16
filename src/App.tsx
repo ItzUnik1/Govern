@@ -143,13 +143,13 @@ export default function App() {
   const showOver = !!game.gameOver && queue.length === 0;
 
   return (
-    <div className="app">
+    <div className="app game">
       <div className="topbar">
         <span className="flag">{c.flag}</span>
         <div className="grow"><div className="t1">{c.name}</div><div className="t2">{game.pol.inGovernment ? c.title : 'Leader of the Opposition'} · {dateLabel(game)}</div></div>
         <span className="chip">👍 {fmtPct(game.approval, 0)}</span>
       </div>
-      <div className="content" ref={contentRef}>
+      <div className={`content${tab === 'overview' ? ' flat' : ''}`} ref={contentRef}>
         <UpdateBanner upd={upd} onOpen={() => setShowUpd(true)} />
         {tab === 'overview' && <Overview {...ctx} />}
         {tab === 'economy' && <Economy {...ctx} />}

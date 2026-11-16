@@ -11,9 +11,14 @@ interface ApkUpdaterApi {
   openInstallSettings(): Promise<void>;
   download(o: { url: string }): Promise<{ bytes: number }>;
   install(): Promise<void>;
+  setOrientation(o: { mode: string }): Promise<void>;
   addListener(ev: 'progress', fn: (p: { pct: number; bytes: number; total: number }) => void): Promise<PluginListenerHandle>;
 }
 const Native = registerPlugin<ApkUpdaterApi>('ApkUpdater');
+/** Android only: lock the screen to portrait/landscape, or follow the phone's rotation. No-op in a browser. */
+export function applyOrientation(mode: 'auto' | 'portrait' | 'landscape') {
+  try { if (Capacitor.isNativePlatform()) void Native.setOrientation({ mode }).catch(() => {}); } catch { /* ignore */ }
+}
 export const isNative = () => Capacitor.isNativePlatform();
 
 export interface UpdateInfo { build: number; notes: string; url: string; size: number; published: string }

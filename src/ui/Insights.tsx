@@ -41,7 +41,7 @@ export function Advisers({ s, go }: Ctx) {
   );
 }
 
-function Spark({ data, color }: { data: number[]; color: string }) {
+export function Spark({ data, color }: { data: number[]; color: string }) {
   if (data.length < 2) return <svg className="spark" />;
   const lo = Math.min(...data), hi = Math.max(...data), r = hi - lo || 1;
   const pts = data.map((v, i) => `${((i / (data.length - 1)) * 100).toFixed(1)},${(22 - ((v - lo) / r) * 20).toFixed(1)}`).join(' ');

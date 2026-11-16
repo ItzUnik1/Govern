@@ -49,7 +49,7 @@ export default function Title({ onStart, onLoad }: { onStart: (s: GameState) => 
       <div className="page">
         <button className="back" onClick={() => setStep('title')}>‹ Back</button>
         <h2>Choose your country</h2>
-        {COUNTRY_LIST.map((c) => (
+        <div className="country-grid">{COUNTRY_LIST.map((c) => (
           <button key={c.id} className="country-card" onClick={() => { setCountry(c); setStep('detail'); }}>
             <span className="fl">{c.flag}</span>
             <div style={{ flex: 1 }}>
@@ -58,7 +58,7 @@ export default function Title({ onStart, onLoad }: { onStart: (s: GameState) => 
               <div className="small"><Stars n={c.difficultyStars} /> <span className="muted">difficulty</span></div>
             </div>
           </button>
-        ))}
+        ))}</div>
         <div className="tiny muted">More countries arrive in Stage 4 (target 15–20).</div>
       </div>
     );

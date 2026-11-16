@@ -35,6 +35,20 @@ public class ApkUpdaterPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setOrientation(PluginCall call) {
+        final String mode = call.getString("mode", "auto");
+        final android.app.Activity a = getActivity();
+        if (a == null) { call.resolve(); return; }
+        a.runOnUiThread(() -> {
+            int o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER;
+            if ("portrait".equals(mode)) o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT;
+            else if ("landscape".equals(mode)) o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE;
+            a.setRequestedOrientation(o);
+        });
+        call.resolve();
+    }
+
+    @PluginMethod
     public void canInstall(PluginCall call) {
         JSObject r = new JSObject();
         r.put("allowed", mayInstall());

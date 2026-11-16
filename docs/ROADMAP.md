@@ -63,3 +63,5 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 - Fast-forward: Overview has 6-month and 1-year buttons (`advanceMany` in App.tsx). Pauses on events, elections, formation and game end; routine events are rarer while fast-forwarding (`flags.ff`, drawEvent).
 
 - News & inbox (`src/engine/news.ts`, `src/ui/Inbox.tsx`): headlines, quarterly economic reports, opposition criticism, public reactions, foreign proposals, messages from ministers and coalition partners. Derived from game state, never changes the simulation. Menu > News & inbox; top headlines on Overview.
+
+- UI redesign step 1 (done): new Home (standing ring, KPI tiles with trends, 'Needs you' list, headlines) and landscape layout (left nav rail, two-column pages, side panel with Advance on Home, centred pop-ups). Orientation setting Auto/Portrait/Landscape in Settings (native `setOrientation` in ApkUpdaterPlugin; manifest fullUser). TODO: polish more screens in landscape (Economy charts, Parliament, Build), Menu tile grid, test on a real phone.

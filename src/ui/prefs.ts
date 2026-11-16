@@ -1,3 +1,4 @@
+import { applyOrientation } from '../update';
 // UI preferences (device-local, not part of saved games). All storage access is guarded.
 export type TextSize = 's' | 'm' | 'l';
 const KEY = 'govern.textSize';
@@ -35,6 +36,13 @@ export function togglePin(id: string): string[] {
   return next;
 }
 
+export type Orient = 'auto' | 'portrait' | 'landscape';
+export function getOrient(): Orient {
+  try { const v = localStorage.getItem('govern.orient'); if (v === 'portrait' || v === 'landscape' || v === 'auto') return v; } catch { /* ignore */ }
+  return 'auto';
+}
+export function setOrient(o: Orient) { try { localStorage.setItem('govern.orient', o); } catch { /* ignore */ } applyOrientation(o); }
+
 export type Theme = 'dark' | 'light' | 'contrast';
 export function getTheme(): Theme {
   try { const v = localStorage.getItem('govern.theme'); if (v === 'dark' || v === 'light' || v === 'contrast') return v; } catch { /* ignore */ }
@@ -50,4 +58,4 @@ export function getFlag(k: string, dflt: boolean): boolean {
 }
 export function setFlag(k: string, v: boolean) { try { localStorage.setItem('govern.' + k, v ? '1' : '0'); } catch { /* ignore */ } }
 
-export function initPrefs() { applyTextSize(getTextSize()); document.documentElement.dataset.theme = getTheme(); }
+export function initPrefs() { applyTextSize(getTextSize()); document.documentElement.dataset.theme = getTheme(); applyOrientation(getOrient()); }
