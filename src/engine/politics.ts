@@ -49,12 +49,13 @@ function promiseNet(s: GameState, judge: boolean): { fresh: number; kept: number
 }
 
 /** National vote shares (%). With rnd = noisy election-day result; without = poll estimate. */
+const isPlayerInc0 = (s: GameState) => s.pol.pmParty === s.pol.playerParty;
 export function nationalShares(s: GameState, rnd?: () => number, extra = 0): Record<string, number> {
   const sy = sysOf(s), P = s.pol;
   const { margin } = incMargin(s);
   const inc = pdef(sy, P.pmParty);
   const rivalBase = Math.max(...sy.parties.filter((p) => p.id !== inc.id && !p.regions).map((p) => p.base));
-  const B = Math.max(0, rivalBase - inc.base) * 0.5 + (s.flags.incBonus ?? 0);
+  const B = Math.max(0, rivalBase - inc.base) * 0.5 + (s.flags.incBonus ?? 0) - (isPlayerInc0(s) ? 0.5 * (s.ai?.opp.momentum ?? 0) : 0);
   const swing = rnd ? normal(rnd) * 3 : 0;
   const isPlayerInc = P.pmParty === P.playerParty;
   let incShare = clamp(inc.base + 0.9 * margin + B + swing + (isPlayerInc ? extra : 0), 4, 65);
@@ -372,6 +373,7 @@ export function ncRisk(s: GameState): number {
   let r = 0.003 + 0.12 * Math.max(0, 0.55 - share) + 0.02 * Math.max(0, 30 - s.approval) / 30 * 2;
   for (const id of P.coalition) if (id !== P.pmParty) r += 0.03 * Math.max(0, 35 - (P.parties[id]?.sat ?? 50)) / 35;
   if (P.minority) r += 0.012;
+  r += 0.006 * Math.max(0, s.ai?.opp.momentum ?? 0);
   return clamp(r * s.difficulty.stability, 0, 0.25);
 }
 export function confidenceVote(s: GameState, rnd: () => number): { won: boolean; yes: number; no: number } {

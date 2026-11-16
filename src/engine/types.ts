@@ -219,6 +219,14 @@ export interface DiploState {
   influence: number;
   log: string[];
 }
+export interface Offer { id: number; nation: string; kind: 'trade' | 'alliance' | 'aid' | 'demand' | 'summit'; text: string; target?: string; turn: number; expires: number }
+export interface AIState {
+  nations: Record<string, { mood: number; lastAct: number }>;
+  offers: Offer[];
+  opp: { momentum: number; lastMove: string; lastTurn: number };
+  news: string[];
+  nextId: number;
+}
 export interface ResearchState { budgetPct: number; progress: Record<string, number>; current: string | null; queue: string | null; done: string[] }
 
 export interface GameOver {
@@ -292,6 +300,7 @@ export interface GameState {
   projects: ProjectState[];
   pol: PoliticsState;
   dip: DiploState;
+  ai: AIState;
   res: ResearchState;
 }
 

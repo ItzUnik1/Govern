@@ -1,3 +1,4 @@
+import { leadOpposition } from '../engine/rivalai';
 import { useMemo, useState } from 'react';
 import { BILLS, getBill } from '../engine/laws';
 import { POSTS, SYSTEMS } from '../engine/parties';
@@ -63,8 +64,16 @@ function Parliament({ s, update, toast }: Ctx) {
   const gov = pdef(s, P.pmParty);
   const apr = series(s.history, 'approval');
   const status = pres ? (share > 0.5 ? 'Your party controls the House' : 'Opposition controls the House - expect gridlock') : P.minority ? 'Minority government' : 'Majority government';
+  const opp = s.ai.opp; const leadId = leadOpposition(s);
   return (
     <>
+      {P.inGovernment && leadId && (
+        <Card title="🎯 Lead opposition">
+          <div className="row between small"><b>{pdef(s, leadId).name}</b><span className={opp.momentum > 1.5 ? 'bad' : opp.momentum < -0.5 ? 'good' : 'muted'}>{opp.momentum > 1.5 ? 'Gaining momentum' : opp.momentum < -0.5 ? 'Losing steam' : 'Steady'}</span></div>
+          <div className="small muted" style={{ marginTop: 4 }}>{opp.lastMove}</div>
+          <div className="tiny muted">Their campaign moves the polls and raises no-confidence risk when you are struggling.</div>
+        </Card>
+      )}
       <Card title={sy.chamber}>
         <SeatBar s={s} />
         <div className="small" style={{ marginTop: 8 }}><b>{pres ? 'President' : c.title}:</b> {gov.name}{P.coalition.length > 1 ? ` with ${P.coalition.filter((x) => x !== P.pmParty).map((x) => pdef(s, x).short).join(', ')}` : ''}</div>

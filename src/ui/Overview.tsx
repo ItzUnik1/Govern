@@ -22,6 +22,11 @@ export default function Overview({ s, advance, openEvent, openBriefing, go }: Ct
         </button>
       )}
 
+      {s.pol.inGovernment && s.ai.offers.length > 0 && (
+        <button className="card" style={{ width: '100%', textAlign: 'left' }} onClick={() => go('world')}>
+          <div className="row"><span style={{ fontSize: 22 }}>📨</span><div><b>{s.ai.offers.length} proposal{s.ai.offers.length > 1 ? 's' : ''} from foreign governments</b><div className="small muted">Tap to answer in World.</div></div></div>
+        </button>
+      )}
       <div className="grid2">
         <Stat label="Approval" value={fmtPct(s.approval, 0)} sub={<Bar value={s.approval} tone={toneFor(s.approval, 45, 30)} />} />
         <Stat label="Stability" value={s.stability.toFixed(0)} sub={<><Bar value={s.stability} tone={toneFor(s.stability, 55, 35)} /> <span className="tiny">{stability_label(s)}</span></>} />

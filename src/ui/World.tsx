@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LENDERS, WORLD, ally, cancelTrade, delegation, getNation, giveAid, joinOrg, nationsOf, negotiateTrade, orgsOf, repayLoan, requestAid, sanction, summit, takeLoan, tradeWeights } from '../engine/diplomacy';
+import { answerOffer } from '../engine/rivalai';
 import { Bar, Card, Stat, fmtMoney, fmtPct, toneFor } from './common';
 import type { Ctx } from './ctx';
 
@@ -16,6 +17,21 @@ export default function World({ s, update, toast }: Ctx) {
   return (
     <>
       {!s.pol.inGovernment && <div className="card warn small">🔒 You are in opposition. Only the government can negotiate treaties, impose sanctions, take loans or give aid.</div>}
+      {s.ai.offers.length > 0 && s.pol.inGovernment && (
+        <Card title={`📨 Proposals from governments (${s.ai.offers.length})`}>
+          {s.ai.offers.map((o) => (
+            <div key={o.id} style={{ margin: '8px 0 12px' }}>
+              <b>{getNation(o.nation).flag} {getNation(o.nation).name}</b>
+              <div className="small">{o.text}</div>
+              <div className="tiny muted">Expires in {Math.max(0, o.expires - s.turn)} months</div>
+              <div className="row" style={{ marginTop: 6 }}>
+                <button className="btn small" style={{ flex: 1 }} onClick={() => run((g) => answerOffer(g, o.id, true))}>Accept</button>
+                <button className="btn sec small" style={{ flex: 1 }} onClick={() => run((g) => answerOffer(g, o.id, false))}>Decline</button>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
       <div className="grid2">
         <Stat label="Global influence" value={D.influence.toFixed(0)} sub="friendships and economic weight" />
         <Stat label="Trade partners" value={nations.filter((n) => D.nations[n.id].trade > 0).length} sub={`of ${nations.length} nations with deals`} />
@@ -59,6 +75,7 @@ export default function World({ s, update, toast }: Ctx) {
             );
           })}
           <div className="tiny muted">Relations drift back toward their natural level unless you back them with trade deals, alliances and aid. Strong ties lift exports, investment and confidence; sanctions and feuds hurt them.</div>
+          {s.ai.news.length > 0 && <Card title="🌍 World news">{s.ai.news.slice(0, 6).map((l, i) => <div key={i} className="small">{l}</div>)}</Card>}
           {D.log.length > 0 && <Card title="Diplomatic record">{D.log.slice(0, 8).map((l, i) => <div key={i} className="small">{l}</div>)}</Card>}
         </>
       )}

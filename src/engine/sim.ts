@@ -3,6 +3,7 @@
 import { startEventProject } from './projects';
 import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
+import { initAI, stepRivalAI } from './rivalai';
 import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
 import { initResearch, researchCostPct, stepResearch } from './research';
 import { confirmFormation, declineFormation, fallOfGovernment, govSeatShare, initPolitics, isPresidential, ministerBonus, ministerMult, monthlyPolitics, ncRisk, oppositionDrift, pdef, runElection, settleGovernment, sysOf } from './politics';
@@ -67,13 +68,14 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), res: initResearch(),
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], res: initResearch(),
   };
   // Starting national conditions: >1 means a worse inheritance (more debt, inflation, joblessness; weaker approval and confidence).
   { const k = difficulty.start - 1;
     s.debt *= 1 + 0.5 * k; s.inflation = Math.max(0.2, s.inflation + 2 * k); s.unemployment = Math.max(0.8, s.unemployment + 1.5 * k);
     s.approval = clamp(s.approval - 8 * k, 10, 90); s.confidence = clamp(s.confidence - 10 * k, 10, 90); }
   s.pol = initPolitics(s, partyId, () => rngNext(s));
+  s.ai = initAI(s);
   s.dip.influence = influence(s);
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);
@@ -388,6 +390,7 @@ export function advanceMonth(input: GameState): GameState {
   const projLoad = stepProjects(s, c, rnd, notes);
   stepResearch(s, c, notes);
   const dx = stepDiplomacy(s, rnd, notes);
+  stepRivalAI(s, rnd, notes);
   const ex = stepEco(s, c, projLoad, dx);
   s.growth = clamp(s.growth + 0.35 * ex.growthAdj, -12, 12);
   s.confidence = clamp(s.confidence + ex.confAdj * 0.1, 0, 100);
