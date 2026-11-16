@@ -47,7 +47,7 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 
 ## Later stages (not started)
 - Stage 7: security and crises (military, border conflicts, intelligence, cyber, crisis chains)
-- Stage 8: quality of life. DONE (batch 1): advisers page, statistics screen, first-run tutorial (replay from How it works), synthesised sound effects, dark/light/high-contrast themes. TODO: Nepali and Hindi translation (needs an i18n layer: nav, menu, settings, dashboard first), more tutorial hints in context
+- Stage 8: quality of life. DONE (batch 1): advisers page, statistics screen, first-run tutorial (replay from How it works), synthesised sound effects, dark/light/high-contrast themes. Languages dropped by the user: the game stays English only. TODO: more in-context tutorial hints
 - Stage 9: final release (release-signed APK, full test pass, install guide)
 
 ## Known issues and simplifications
