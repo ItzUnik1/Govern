@@ -75,6 +75,7 @@ export default function Overview({ s, advance, advanceMany, openEvent, openBrief
         <button className="btn sec small" style={{ flex: 1 }} onClick={openBriefing} disabled={!s.lastReport}>📋 Last briefing</button>
       </div>
 
+      <div className="tiny muted" style={{ textAlign: 'center' }}>Fast-forward is calmer and pauses for any decision or election · {dateLabel(s)} · {c.title}</div>
       <div className="advance">
         <button className="btn" onClick={advance} disabled={!!s.pendingEvent || !!s.gameOver}>
           {s.pendingEvent ? 'Resolve the event first' : `Advance to ${nextM} ▶`}
@@ -83,7 +84,6 @@ export default function Overview({ s, advance, advanceMany, openEvent, openBrief
           <button className="btn sec small" style={{ flex: 1 }} onClick={() => advanceMany(6)} disabled={!!s.pendingEvent || !!s.gameOver}>6 months ⏩</button>
           <button className="btn sec small" style={{ flex: 1 }} onClick={() => advanceMany(12)} disabled={!!s.pendingEvent || !!s.gameOver}>1 year ⏩</button>
         </div>
-        <div className="tiny muted" style={{ textAlign: 'center', marginTop: 4 }}>Fast-forward is calmer and pauses for any decision or election · {dateLabel(s)} · {c.title}</div>
       </div>
     </>
   );
