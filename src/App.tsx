@@ -163,7 +163,7 @@ export default function App() {
       </div>
       <div className="nav">
         {NAV.map((n) => (
-          <button key={n.id} className={tab === n.id || (n.id === 'menu' && MENU_PAGES.includes(tab)) ? 'on' : ''} onClick={() => goTo(n.id)}><span className="ico">{n.ico}{n.id === 'menu' && upd.status === 'available' && <i className="dot" />}</span>{n.label}</button>
+          <button key={n.id} className={tab === n.id || (n.id === 'menu' && MENU_PAGES.includes(tab)) ? 'on' : ''} onClick={() => goTo(n.id)}><span className="ico">{n.ico}{n.id === 'menu' && (upd.status === 'available' || game.news.items.some((x) => x.unread && x.cat === 'message')) && <i className="dot" />}</span>{n.label}</button>
         ))}
       </div>
       {coach && <Coach go={goTo} onDone={() => { setCoach(false); setFlag('tutorialSeen', true); }} />}

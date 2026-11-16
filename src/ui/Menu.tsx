@@ -19,6 +19,7 @@ export const MENU: Group[] = [
     { id: 'research', ico: '🔬', title: 'Research', desc: 'R&D budget and techs', tab: 'build', sub: 'research' },
   ] },
   { title: 'Records', items: [
+    { id: 'inbox', ico: '📰', title: 'News & inbox', desc: 'Headlines, reports, messages', tab: 'more', sub: 'inbox' },
     { id: 'advisers', ico: '🧭', title: 'Advisers', desc: 'Treasury, politics, foreign', tab: 'more', sub: 'advisers' },
     { id: 'stats', ico: '📊', title: 'Statistics', desc: 'Trends since day one', tab: 'more', sub: 'stats' },
     { id: 'history', ico: '📈', title: 'History & reports', desc: 'Monthly reports and effects', tab: 'more', sub: 'history' },

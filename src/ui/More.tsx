@@ -7,9 +7,10 @@ import type { Ctx } from './ctx';
 import { CURRENT_BUILD } from '../update';
 import { getFlag, getTextSize, getTheme, setFlag, setTextSize, setTheme, type TextSize, type Theme } from './prefs';
 import { Advisers, Stats } from './Insights';
+import Inbox from './Inbox';
 import { play } from './sound';
 
-type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings' | 'stats' | 'advisers';
+type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings' | 'stats' | 'advisers' | 'inbox';
 
 export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: () => void }) {
   const sub = (p.sub as Sub) || 'history';
@@ -21,6 +22,7 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
       {sub === 'help' && <Help {...p} />}
       {sub === 'stats' && <Stats {...p} />}
       {sub === 'advisers' && <Advisers {...p} />}
+      {sub === 'inbox' && <Inbox {...p} />}
       {sub === 'settings' && <Settings {...p} />}
     </>
   );

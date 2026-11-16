@@ -19,9 +19,10 @@ const PERS: Record<string, { trade: number; hawk: number; aid: number }> = {
 export function initAI(s: GameState): AIState {
   const nations: AIState['nations'] = {};
   for (const n of nationsOf(s)) nations[n.id] = { mood: 0, lastAct: -99 };
-  return { nations, offers: [], opp: { momentum: 0, lastMove: 'Regrouping after the last election.', lastTurn: 0 }, news: [], nextId: 1 };
+  return { nations, offers: [], opp: { momentum: 0, lastMove: 'Regrouping after the last election.', lastTurn: -5 }, news: [], nextId: 1 };
 }
 
+const pick = <T,>(rnd: () => number, a: T[]): T => a[Math.floor(rnd() * a.length) % a.length];
 const say = (s: GameState, t: string) => { s.ai.news.unshift(`${s.y}: ${t}`); s.ai.news = s.ai.news.slice(0, 12); };
 
 function addOffer(s: GameState, o: Omit<Offer, 'id' | 'turn' | 'expires'>) {
@@ -120,8 +121,8 @@ function stepOpposition(s: GameState, rnd: () => number, notes: string[]) {
   const mo = [{ k: 'attack', u: 0.35 + 0.25 * weak }, { k: 'poach', u: shaky.length ? 0.5 + 0.1 * shaky.length : -1 }, { k: 'noconf', u: minority && s.approval < 40 ? 0.7 : -1 }, { k: 'policy', u: 0.3 + 0.1 * rnd() }].sort((a, b) => b.u - a.u)[0];
   o.lastTurn = s.turn;
   if (mo.k === 'attack') {
-    if (weak >= 2) { o.momentum = clamp(o.momentum + 0.5 + 0.2 * weak, -6, 6); s.approval = clamp(s.approval - 0.5, 3, 95); o.lastMove = `${nm} hammers the government over the economy.`; notes.push(`📣 ${o.lastMove}`); }
-    else { o.momentum = clamp(o.momentum - 0.3, -6, 6); o.lastMove = `${nm} attacks your record, but with the economy in decent shape it falls flat.`; notes.push(`📣 ${o.lastMove}`); }
+    if (weak >= 2) { o.momentum = clamp(o.momentum + 0.5 + 0.2 * weak, -6, 6); s.approval = clamp(s.approval - 0.5, 3, 95); o.lastMove = pick(rnd, [`${nm} hammers the government over the economy.`, `${nm} says families are paying for your failures.`, `${nm} leads a heated debate on the cost of living.`]); notes.push(`📣 ${o.lastMove}`); }
+    else { o.momentum = clamp(o.momentum - 0.3, -6, 6); o.lastMove = pick(rnd, [`${nm} attacks your record, but with the economy in decent shape it falls flat.`, `${nm} calls for a change, yet voters seem unmoved.`, `${nm} demands an inquiry; the public shrugs.`]); notes.push(`📣 ${o.lastMove}`); }
   } else if (mo.k === 'poach') {
     const id = shaky[Math.floor(rnd() * shaky.length)];
     P.parties[id].sat = clamp(P.parties[id].sat - 6, 0, 100);
@@ -131,7 +132,7 @@ function stepOpposition(s: GameState, rnd: () => number, notes: string[]) {
     o.lastMove = `${nm} threatens a no-confidence motion.`; notes.push(`⚔️ ${o.lastMove}`);
   } else {
     o.momentum = clamp(o.momentum + 0.15, -6, 6);
-    o.lastMove = `${nm} unveils a rival policy platform and gets good press.`; notes.push(`📣 ${o.lastMove}`);
+    o.lastMove = pick(rnd, [`${nm} unveils a rival policy platform and gets good press.`, `${nm} launches a listening tour in the regions.`, `${nm} promises a different path in a keynote speech.`]); notes.push(`📣 ${o.lastMove}`);
   }
 }
 

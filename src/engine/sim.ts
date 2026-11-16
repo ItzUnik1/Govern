@@ -4,6 +4,7 @@ import { startEventProject } from './projects';
 import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
 import { initAI, stepRivalAI } from './rivalai';
+import { initNews, stepNews } from './news';
 import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
 import { initResearch, researchCostPct, stepResearch } from './research';
 import { confirmFormation, declineFormation, fallOfGovernment, govSeatShare, initPolitics, isPresidential, ministerBonus, ministerMult, monthlyPolitics, ncRisk, oppositionDrift, pdef, runElection, settleGovernment, sysOf } from './politics';
@@ -68,7 +69,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], res: initResearch(),
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(),
   };
   // Starting national conditions: >1 means a worse inheritance (more debt, inflation, joblessness; weaker approval and confidence).
   { const k = difficulty.start - 1;
@@ -76,6 +77,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     s.approval = clamp(s.approval - 8 * k, 10, 90); s.confidence = clamp(s.confidence - 10 * k, 10, 90); }
   s.pol = initPolitics(s, partyId, () => rngNext(s));
   s.ai = initAI(s);
+  s.news = initNews(s);
   s.dip.influence = influence(s);
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);
@@ -474,6 +476,7 @@ export function advanceMonth(input: GameState): GameState {
     { label: 'Investor confidence', from: prev.confidence, to: s.confidence, unit: '', goodWhenUp: true, digits: 1 },
     { label: 'Currency index', from: prev.currency, to: s.currency, unit: '', goodWhenUp: null, digits: 1 },
   ];
+  stepNews(s, rnd, prev, notes);
   const report: MonthReport = { y: s.y, m: s.m, deltas, notes };
   s.lastReport = report;
   s.reports.push(report);

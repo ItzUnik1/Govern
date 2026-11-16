@@ -61,3 +61,5 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 
 - Opportunities (`src/engine/opportunities.ts`): gas find, tourism surge, bumper harvest, breakthrough, global event bid, credit upgrade, remittances, market access. Each costs money or a construction slot to exploit.
 - Fast-forward: Overview has 6-month and 1-year buttons (`advanceMany` in App.tsx). Pauses on events, elections, formation and game end; routine events are rarer while fast-forwarding (`flags.ff`, drawEvent).
+
+- News & inbox (`src/engine/news.ts`, `src/ui/Inbox.tsx`): headlines, quarterly economic reports, opposition criticism, public reactions, foreign proposals, messages from ministers and coalition partners. Derived from game state, never changes the simulation. Menu > News & inbox; top headlines on Overview.

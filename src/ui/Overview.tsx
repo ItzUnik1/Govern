@@ -38,6 +38,12 @@ export default function Overview({ s, advance, advanceMany, openEvent, openBrief
         <Stat label="Next election" value={`${s.monthsToElection} mo`} sub={`${s.term > 1 ? `Term ${s.term}` : 'First term'}`} />
       </div>
 
+      {s.news.items.length > 0 && (
+        <Card title={`📰 Headlines${s.news.items.some((n) => n.unread) ? ` · ${s.news.items.filter((n) => n.unread).length} new` : ''}`}>
+          {s.news.items.filter((n) => n.cat !== 'message').slice(0, 3).map((n) => <div key={n.id} style={{ margin: '6px 0' }}><div className="small" style={{ fontWeight: 600 }}>{n.tone === 'bad' ? '🔻 ' : n.tone === 'good' ? '🔺 ' : ''}{n.head}</div></div>)}
+          <button className="btn sec small" onClick={() => go('more', 'inbox')}>Open news & inbox{s.news.items.some((n) => n.cat === 'message' && n.unread) ? ' (messages waiting)' : ''}</button>
+        </Card>
+      )}
       <Card title="Issues & advice">
         {adv.map((a, i) => (
           <div key={i} className={`adv ${a.level}`}>{a.level === 'bad' ? '⚠️' : a.level === 'warn' ? '❗' : a.level === 'good' ? '✅' : 'ℹ️'} <span>{a.text}</span></div>

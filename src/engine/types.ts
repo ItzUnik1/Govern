@@ -227,6 +227,12 @@ export interface AIState {
   news: string[];
   nextId: number;
 }
+export type NewsCat = 'national' | 'economy' | 'world' | 'opposition' | 'public' | 'message';
+export interface NewsItem { id: number; turn: number; y: number; m: number; cat: NewsCat; tone: 'good' | 'bad' | 'neutral'; head: string; body?: string; from?: string; unread: boolean; link?: { tab: string; sub?: string } }
+export interface NewsState {
+  items: NewsItem[]; nextId: number; lastTax: Record<string, number>; lastSpend: Record<string, number>;
+  seenOffers: number[]; seenAiNews: string[]; lastOppTurn: number; seenEvents: number; seenBills: number; lastAdvice: Record<string, number>; lastPartner: number;
+}
 export interface ResearchState { budgetPct: number; progress: Record<string, number>; current: string | null; queue: string | null; done: string[] }
 
 export interface GameOver {
@@ -301,6 +307,7 @@ export interface GameState {
   pol: PoliticsState;
   dip: DiploState;
   ai: AIState;
+  news: NewsState;
   res: ResearchState;
 }
 
