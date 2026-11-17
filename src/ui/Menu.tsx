@@ -49,19 +49,19 @@ export default function Menu({ go, onQuit }: Ctx & { onQuit: () => void }) {
   return (
     <>
       {pinned.length > 0 && (
-        <div>
+        <div className="mgroup">
           <div className="eyebrow" style={{ margin: '2px 2px 6px' }}>Pinned</div>
           <div className="chips">{pinned.map((it) => <button key={it.id} onClick={() => go(it.tab, it.sub)}>{it.ico} {it.title}</button>)}</div>
         </div>
       )}
       {MENU.map((g) => (
-        <div key={g.title}>
+        <div key={g.title} className="mgroup">
           <div className="eyebrow" style={{ margin: '8px 2px 6px' }}>{g.title}</div>
           <div className="grid2">{g.items.map((it) => <Card key={it.id} it={it} />)}</div>
         </div>
       ))}
-      <div className="tiny muted" style={{ textAlign: 'center' }}>Tap ☆ on a card to pin it to the top of this menu.</div>
-      <button className="btn sec" onClick={onQuit}>Quit to title screen</button>
+      <div className="tiny muted mgroup" style={{ textAlign: 'center' }}>Tap ☆ on a card to pin it to the top of this menu.</div>
+      <button className="btn sec mgroup" onClick={onQuit}>Quit to title screen</button>
     </>
   );
 }
