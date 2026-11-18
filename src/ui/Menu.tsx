@@ -14,6 +14,11 @@ export const MENU: Group[] = [
     { id: 'elections', ico: '🗳️', title: 'Elections', desc: 'Forecast, campaign, history', tab: 'politics', sub: 'elections' },
     { id: 'legacy', ico: '🏆', title: 'Legacy', desc: 'Your political record', tab: 'politics', sub: 'legacy' },
   ] },
+  { title: 'Society', items: [
+    { id: 'people', ico: '👥', title: 'People', desc: 'Ageing, migration, voting blocs', tab: 'more', sub: 'people' },
+    { id: 'climate', ico: '🌍', title: 'Climate', desc: 'Emissions, disasters, green policy', tab: 'more', sub: 'climate' },
+    { id: 'media', ico: '📺', title: 'Media & trust', desc: 'Scandals, spin, public trust', tab: 'more', sub: 'media' },
+  ] },
   { title: 'Development', items: [
     { id: 'projects', ico: '🏗️', title: 'Projects', desc: 'National construction', tab: 'build', sub: 'projects' },
     { id: 'research', ico: '🔬', title: 'Research', desc: 'R&D budget and techs', tab: 'build', sub: 'research' },

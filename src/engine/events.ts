@@ -6,6 +6,7 @@ import { coalSeats, confidenceVote, fallOfGovernment, genMinister, pdef, sysOf, 
 import { POSTS } from './parties';
 import { startEventProject, type EventProjectSpec } from './projects';
 import { OPPORTUNITY_EVENTS } from './opportunities';
+import { SOCIETY_EVENTS, socDisasterFactor } from './society';
 import { getNation, rivalNation, topPartner } from './diplomacy';
 
 export interface Fx {
@@ -121,7 +122,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'disaster', title: 'Natural disaster', icon: '🌪️', category: 'Crisis', cooldown: 18,
-    weight: (_s, c) => 0.7 * c.disasterRisk,
+    weight: (s, c) => 0.7 * c.disasterRisk * socDisasterFactor(s),
     text: (_s, c) => DISASTER[c.id] ?? 'A major natural disaster has struck.',
     choices: [
       { label: 'Massive relief and rebuilding', hint: 'Expensive; reconstruction boosts activity later', run: (fx) => {
@@ -600,6 +601,7 @@ EVENTS.push(
 );
 
 EVENTS.push(...OPPORTUNITY_EVENTS);
+EVENTS.push(...SOCIETY_EVENTS);
 const BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
 export const getEvent = (id: string): EventDef | undefined => BY_ID.get(id);
 

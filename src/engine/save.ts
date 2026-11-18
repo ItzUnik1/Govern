@@ -6,6 +6,7 @@ import { initResearch } from './research';
 import { COUNTRIES } from './countries';
 import { initAI } from './rivalai';
 import { initNews } from './news';
+import { initSociety } from './society';
 import { SAVE_VERSION, dateLabel } from './sim';
 import type { GameState } from './types';
 
@@ -71,6 +72,7 @@ function migrate(s: GameState): GameState {
   if (!s.ai) s.ai = initAI(s);
   if (!s.news) s.news = initNews(s);
   if (!s.res) s.res = initResearch();
+  if (!s.soc) s.soc = initSociety(s, COUNTRIES[s.countryId]);
   s.v = SAVE_VERSION;
   return s;
 }

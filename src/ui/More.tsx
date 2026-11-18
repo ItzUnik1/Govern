@@ -8,9 +8,10 @@ import { CURRENT_BUILD } from '../update';
 import { getFlag, getOrient, getTextSize, getTheme, setFlag, setOrient, setTextSize, setTheme, type Orient, type TextSize, type Theme } from './prefs';
 import { Advisers, Stats } from './Insights';
 import Inbox from './Inbox';
+import { Climate, Media, People } from './Society';
 import { play } from './sound';
 
-type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings' | 'stats' | 'advisers' | 'inbox';
+type Sub = 'history' | 'save' | 'brief' | 'help' | 'settings' | 'stats' | 'advisers' | 'inbox' | 'people' | 'climate' | 'media';
 
 export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: () => void }) {
   const sub = (p.sub as Sub) || 'history';
@@ -23,6 +24,9 @@ export default function More(p: Ctx & { onLoad: (s: GameState) => void; onQuit: 
       {sub === 'stats' && <Stats {...p} />}
       {sub === 'advisers' && <Advisers {...p} />}
       {sub === 'inbox' && <Inbox {...p} />}
+      {sub === 'people' && <People {...p} />}
+      {sub === 'climate' && <Climate {...p} />}
+      {sub === 'media' && <Media {...p} />}
       {sub === 'settings' && <Settings {...p} />}
     </>
   );

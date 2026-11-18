@@ -1,3 +1,4 @@
+import type { SocietyState } from './society';
 // Core type definitions for GOVERN. Everything in GameState is plain JSON (saveable).
 
 export type TaxKey = 'incomeTax' | 'corpTax' | 'vat';
@@ -309,6 +310,7 @@ export interface GameState {
   ai: AIState;
   news: NewsState;
   res: ResearchState;
+  soc: SocietyState;
 }
 
 export interface Fiscal {

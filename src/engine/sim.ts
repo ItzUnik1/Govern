@@ -5,6 +5,7 @@ import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
 import { initAI, stepRivalAI } from './rivalai';
 import { initNews, stepNews } from './news';
+import { initSociety, runSocAction, socAgeFactor, socCostPct, socRevenuePct, stepSociety } from './society';
 import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
 import { initResearch, researchCostPct, stepResearch } from './research';
 import { confirmFormation, declineFormation, fallOfGovernment, govSeatShare, initPolitics, isPresidential, ministerBonus, ministerMult, monthlyPolitics, ncRisk, oppositionDrift, pdef, runElection, settleGovernment, sysOf } from './politics';
@@ -69,7 +70,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(),
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(), soc: initSociety({ countryId, turn: 0 }, c),
   };
   // Starting national conditions: >1 means a worse inheritance (more debt, inflation, joblessness; weaker approval and confidence).
   { const k = difficulty.start - 1;
@@ -150,14 +151,14 @@ export function fiscal(s: GameState): Fiscal {
   const corp = c.rev0 * c.revShare.corpTax * rCorp * evasion(rCorp) * cyc * confF;
   const vat = c.rev0 * c.revShare.vat * rVat * evasion(rVat) * cyc;
   const other = c.rev0 * c.revShare.other * (1 + c.commodityExports * (s.commodity / 100 - 1));
-  const extra = mod.revenuePct;
+  const extra = mod.revenuePct + socRevenuePct(s);
   const revenuePct = income + corp + vat + other + extra;
   const programSpend = Object.values(s.spend).reduce((a, b) => a + b, 0);
-  const progCost = programCostPct(s) + projectCostPct(s) + researchCostPct(s);
+  const progCost = programCostPct(s) + projectCostPct(s) + researchCostPct(s) + socCostPct(s);
   // Automatic costs the government does not choose: unemployment support rises in a downturn and falls in a boom,
   // and an ageing population slowly raises pension and health bills unless pensions are reformed.
   const stabiliserPct = clamp(0.12 * (s.unemployment - c.unemployment0) * (c.spend0.welfare / 12), -0.5, 1.5);
-  const ageingPct = c.agingDrag * 0.11 * (s.turn / 12) * (s.flags.pensionReform ? 0.5 : 1);
+  const ageingPct = c.agingDrag * 0.11 * (s.turn / 12) * (s.flags.pensionReform ? 0.5 : 1) * socAgeFactor(s);
   const spendPct = programSpend + progCost + stabiliserPct + ageingPct;
   const interestAnnual = (s.debt * s.avgCost) / 100;
   const interestPct = (interestAnnual / s.gdp) * 100;
@@ -279,6 +280,12 @@ export function runAction(s: GameState, id: string): string {
   return 'Done: ' + a.effect;
 }
 
+/** Society actions (press, transparency, green bond) share the cost and cooldown handling of executive actions. */
+export function doSocAction(s: GameState, id: string): string {
+  const fx = makeFx(s, getCountry(s), () => rngNext(s));
+  return runSocAction(s, id, fx);
+}
+
 // ---------- Events ----------
 export function resolveEvent(s: GameState, choiceIndex: number): string {
   if (!s.pendingEvent) return '';
@@ -332,6 +339,9 @@ export function advanceMonth(input: GameState): GameState {
     s.lastVat = s.tax.vat;
   }
   s.prevPolicy = pv;
+
+  // --- 0b. Society: demographics, climate and public mood feed this month's modifiers ---
+  stepSociety(s, c, rnd, notes);
 
   // --- 1. Fiscal position for this month ---
   const mod = sumModifiers(s);

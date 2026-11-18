@@ -38,9 +38,9 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 - [ ] Campaign mode with linked goals
 
 ## Stage 6: society and deeper politics
-- [ ] Demographics (age structure, urbanisation, migration) feeding the economy and voting blocs
-- [ ] Climate and environment (emissions, disasters, green policy trade-offs)
-- [ ] Media and public opinion (scandals, spin, trust)
+- [x] Demographics (age structure, urbanisation, migration) feeding the economy and voting blocs
+- [x] Climate and environment (emissions, disasters, green policy trade-offs)
+- [x] Media and public opinion (scandals, spin, trust)
 - [ ] Individual MPs and party factions (rebellions, whip management)
 - [ ] Referendums and constitutional change
 - [ ] Regional governments (provinces and states with their own politics)
@@ -65,3 +65,5 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 - News & inbox (`src/engine/news.ts`, `src/ui/Inbox.tsx`): headlines, quarterly economic reports, opposition criticism, public reactions, foreign proposals, messages from ministers and coalition partners. Derived from game state, never changes the simulation. Menu > News & inbox; top headlines on Overview.
 
 - UI redesign step 1 (done): new Home (standing ring, KPI tiles with trends, 'Needs you' list, headlines) and landscape layout (left nav rail, two-column pages, side panel with Advance on Home, centred pop-ups). Orientation setting Auto/Portrait/Landscape in Settings (native `setOrientation` in ApkUpdaterPlugin; manifest fullUser). TODO: polish more screens in landscape (Economy charts, Parliament, Build), Menu tile grid, test on a real phone.
+
+- Society (Stage 6 part 1): `src/engine/society.ts`, state `s.soc` (migrated in save.ts), UI `src/ui/Society.tsx` (Menu > Society: People, Climate, Media & trust). Monthly `stepSociety` pushes a 1-month 'society' modifier (growth, inflation, unemployment, approval, stability, confidence); policy running costs and carbon revenue enter `fiscal()`; `socAgeFactor` scales the ageing bill; `socDisasterFactor` scales the disaster event weight. Voting blocs (youth, workers, elders, rural) weight approval by population share. 7 new events. Probe: `npx tsx scripts/socprobe.ts [idle|green|people|media]`.
