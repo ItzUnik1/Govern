@@ -8,6 +8,7 @@ import { startEventProject, type EventProjectSpec } from './projects';
 import { OPPORTUNITY_EVENTS } from './opportunities';
 import { SOCIETY_EVENTS, socDisasterFactor } from './society';
 import { FACTION_EVENTS } from './factions';
+import { REGION_EVENTS } from './regions';
 import { getNation, rivalNation, topPartner } from './diplomacy';
 
 export interface Fx {
@@ -604,6 +605,7 @@ EVENTS.push(
 EVENTS.push(...OPPORTUNITY_EVENTS);
 EVENTS.push(...SOCIETY_EVENTS);
 EVENTS.push(...FACTION_EVENTS);
+EVENTS.push(...REGION_EVENTS);
 const BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
 export const getEvent = (id: string): EventDef | undefined => BY_ID.get(id);
 

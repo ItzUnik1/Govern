@@ -3,6 +3,7 @@
 import { COUNTRIES } from './countries';
 import { getBill, getPromise, BILLS, PROMISES } from './laws';
 import { POSTS, SYSTEMS, type PartyDef, type SystemDef } from './parties';
+import { regionTilt } from './regions';
 import { initFactions, partyYes, rebelShare, stepFactions } from './factions';
 import type { GameState, Minister, PartyState, PoliticsState, RegionResult } from './types';
 
@@ -109,6 +110,7 @@ function regionalShares(s: GameState, national: Record<string, number>, rnd: (()
       }
       v *= regionFactor(p, r.urban, r.cons);
       if (p.id === s.pol.playerParty) v *= 1 + 0.012 * (s.pol.campaignRegion[r.id] ?? 0);
+      { const tl = regionTilt(s, r.id); if (p.id === s.pol.pmParty) v *= tl.incumbent; else if (p.regions) v *= tl.regional; }
       if (rnd) v *= Math.exp(noise * normal(rnd));
       raw[p.id] = v; sum += v;
     }

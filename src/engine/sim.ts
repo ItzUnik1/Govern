@@ -6,6 +6,7 @@ import { projectCostPct, stepProjects } from './projects';
 import { initAI, stepRivalAI } from './rivalai';
 import { initNews, stepNews } from './news';
 import { initFactions } from './factions';
+import { initRegions, regCostPct, stepRegions } from './regions';
 import { initSociety, runSocAction, socAgeFactor, socCostPct, socRevenuePct, stepSociety } from './society';
 import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
 import { initResearch, researchCostPct, stepResearch } from './research';
@@ -71,7 +72,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(), soc: initSociety({ countryId, turn: 0 }, c), fac: null as unknown as GameState['fac'],
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(), soc: initSociety({ countryId, turn: 0 }, c), fac: null as unknown as GameState['fac'], reg: null as unknown as GameState['reg'],
   };
   // Starting national conditions: >1 means a worse inheritance (more debt, inflation, joblessness; weaker approval and confidence).
   { const k = difficulty.start - 1;
@@ -81,6 +82,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
   s.ai = initAI(s);
   s.news = initNews(s);
   { let a = (seed ^ 0x9e3779b9) | 0; s.fac = initFactions(s, () => { a = (a + 0x6d2b79f5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }); }
+  { let b = (seed ^ 0x51ed270b) | 0; s.reg = initRegions(s, c, () => { b = (b + 0x6d2b79f5) | 0; let x = Math.imul(b ^ (b >>> 15), 1 | b); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }); }
   s.dip.influence = influence(s);
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);
@@ -156,7 +158,7 @@ export function fiscal(s: GameState): Fiscal {
   const extra = mod.revenuePct + socRevenuePct(s);
   const revenuePct = income + corp + vat + other + extra;
   const programSpend = Object.values(s.spend).reduce((a, b) => a + b, 0);
-  const progCost = programCostPct(s) + projectCostPct(s) + researchCostPct(s) + socCostPct(s);
+  const progCost = programCostPct(s) + projectCostPct(s) + researchCostPct(s) + socCostPct(s) + regCostPct(s);
   // Automatic costs the government does not choose: unemployment support rises in a downturn and falls in a boom,
   // and an ageing population slowly raises pension and health bills unless pensions are reformed.
   const stabiliserPct = clamp(0.12 * (s.unemployment - c.unemployment0) * (c.spend0.welfare / 12), -0.5, 1.5);
@@ -344,6 +346,7 @@ export function advanceMonth(input: GameState): GameState {
 
   // --- 0b. Society: demographics, climate and public mood feed this month's modifiers ---
   stepSociety(s, c, rnd, notes);
+  stepRegions(s, c, rnd, notes);
 
   // --- 1. Fiscal position for this month ---
   const mod = sumModifiers(s);

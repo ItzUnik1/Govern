@@ -8,6 +8,7 @@ import { initAI } from './rivalai';
 import { initNews } from './news';
 import { initSociety } from './society';
 import { initFactions } from './factions';
+import { initRegions } from './regions';
 import { SAVE_VERSION, dateLabel } from './sim';
 import type { GameState } from './types';
 
@@ -73,6 +74,7 @@ function migrate(s: GameState): GameState {
   if (!s.ai) s.ai = initAI(s);
   if (!s.news) s.news = initNews(s);
   if (!s.res) s.res = initResearch();
+  if (!s.reg) s.reg = initRegions(s, COUNTRIES[s.countryId], Math.random);
   if (!s.fac) s.fac = initFactions(s, Math.random);
   if (!s.soc) s.soc = initSociety(s, COUNTRIES[s.countryId]);
   s.v = SAVE_VERSION;

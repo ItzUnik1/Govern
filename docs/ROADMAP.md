@@ -43,7 +43,7 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 - [x] Media and public opinion (scandals, spin, trust)
 - [x] Individual MPs and party factions (rebellions, whip management)
 - [ ] Referendums and constitutional change
-- [ ] Regional governments (provinces and states with their own politics)
+- [x] Regional governments (provinces and states with their own politics)
 
 ## Later stages (not started)
 - Stage 7: security and crises (military, border conflicts, intelligence, cyber, crisis chains)
@@ -68,3 +68,4 @@ Repo workflow rules: push with `git -c push.negotiate=true push origin main`; po
 
 - Society (Stage 6 part 1): `src/engine/society.ts`, state `s.soc` (migrated in save.ts), UI `src/ui/Society.tsx` (Menu > Society: People, Climate, Media & trust). Monthly `stepSociety` pushes a 1-month 'society' modifier (growth, inflation, unemployment, approval, stability, confidence); policy running costs and carbon revenue enter `fiscal()`; `socAgeFactor` scales the ageing bill; `socDisasterFactor` scales the disaster event weight. Voting blocs (youth, workers, elders, rural) weight approval by population share. 7 new events. Probe: `npx tsx scripts/socprobe.ts [idle|green|people|media]`.
 - Factions (Stage 6 part 2): `src/engine/factions.ts`, state `s.fac` (own PRNG at newGame so existing seeds are unchanged), UI `src/ui/PartyRoom.tsx` (Politics > Party, Menu > Your party). Three wings of the player's party with leader, MP share and loyalty; loyalty follows policy tilt vs wing position (`stepFactions`, called from `monthlyPolitics`). `billSupport` votes the PM party wing by wing (`partyYes`); whip button on a pending bill; `rebelShare` feeds `ncRisk` and confidence-vote defections; a wing below 18 for 4 months splits to the strongest rival; events: backbenchRevolt, leadershipChallenge (can end the game), partyConference. Probe: `npx tsx scripts/facprobe.ts`.
+- Regions (Stage 6 part 3): `src/engine/regions.ts`, state `s.reg` (own PRNG at newGame), UI `src/ui/RegionsRoom.tsx` (Politics > Regions, Menu > Regions). Per region: ruling party (changes in staggered 4-year regional elections), development, trust in the centre, grievance. Policies: devolution (3 levels) and grants (4 levels, in `fiscal()` via `regCostPct`). Actions: visit, invest, pact. Effects: 1-month 'regions' modifier (stability, approval, growth, confidence), gini drift from development gap, and a regional tilt in `regionalShares` (`regionTilt`). Events: regionalProtest, autonomyDemand, governorFeud. Probe: `npx tsx scripts/regprobe.ts`. Referendums and constitutional change are the last Stage 6 item.

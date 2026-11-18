@@ -10,9 +10,10 @@ import { Bar, Card, Seg, Stat, fmtPct, stability_label, toneFor } from './common
 import type { Ctx } from './ctx';
 import type { GameState } from '../engine/types';
 import PartyRoom from './PartyRoom';
+import RegionsRoom from './RegionsRoom';
 import { whipBill } from '../engine/factions';
 
-type SegId = 'parliament' | 'party' | 'laws' | 'cabinet' | 'opposition' | 'parties' | 'elections' | 'legacy';
+type SegId = 'parliament' | 'party' | 'regions' | 'laws' | 'cabinet' | 'opposition' | 'parties' | 'elections' | 'legacy';
 
 export function SeatBar({ s, seats }: { s: GameState; seats?: Record<string, number> }) {
   const sy = sysOf(s);
@@ -39,14 +40,15 @@ export default function Politics(ctx: Ctx) {
   const inGov = s.pol.inGovernment;
   const [seg, setSeg] = useState<SegId>((ctx.sub as SegId) || 'parliament');
   const opts: [SegId, string][] = inGov
-    ? [['parliament', 'Parliament'], ['party', 'Party'], ['laws', 'Laws'], ['cabinet', 'Cabinet'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']]
-    : [['parliament', 'Parliament'], ['opposition', 'Opposition'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']];
+    ? [['parliament', 'Parliament'], ['party', 'Party'], ['laws', 'Laws'], ['cabinet', 'Cabinet'], ['regions', 'Regions'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']]
+    : [['parliament', 'Parliament'], ['opposition', 'Opposition'], ['regions', 'Regions'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']];
   const cur = opts.some((o) => o[0] === seg) ? seg : 'parliament';
   return (
     <>
       <div className="chips">{opts.map(([id, l]) => <button key={id} className={cur === id ? 'on' : ''} onClick={() => setSeg(id)}>{l}</button>)}</div>
       {cur === 'parliament' && <Parliament {...ctx} />}
       {cur === 'party' && <PartyRoom {...ctx} />}
+      {cur === 'regions' && <RegionsRoom {...ctx} />}
       {cur === 'laws' && <Laws {...ctx} />}
       {cur === 'cabinet' && <Cabinet {...ctx} />}
       {cur === 'opposition' && <Opposition {...ctx} />}

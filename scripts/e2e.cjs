@@ -35,13 +35,13 @@ const OUT = process.argv[2];
   await shot('04-overview');
 
   // navigate all tabs
-  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Menu:Projects', 'Construction slots'], ['Menu:Parliament', 'Approval history'], ['Menu:Laws & bills', 'Laws'], ['Menu:Cabinet', 'Cabinet'], ['Menu:Research', 'R&D budget'], ['Menu:Save / Load', 'Slot 1'], ['Menu:History & reports', 'Month'], ['Menu:Settings', 'Text size'], ['Menu:News & inbox', 'THE DAILY COURIER'], ['Menu:Advisers', 'Treasury adviser'], ['Menu:Statistics', 'Since you took office'], ['Menu:Your party', 'Avg loyalty'], ['Menu:People', 'Voting blocs'], ['Menu:Climate', 'Climate hazard'], ['Menu:Media', 'Scandal heat'], ['Home', 'Advance to']]) {
+  for (const [label, check] of [['Economy', 'Indicators'], ['Govern', 'Budget forecast'], ['World', 'Global influence'], ['Menu:Projects', 'Construction slots'], ['Menu:Parliament', 'Approval history'], ['Menu:Laws & bills', 'Laws'], ['Menu:Cabinet', 'Cabinet'], ['Menu:Research', 'R&D budget'], ['Menu:Save / Load', 'Slot 1'], ['Menu:History & reports', 'Month'], ['Menu:Settings', 'Text size'], ['Menu:News & inbox', 'THE DAILY COURIER'], ['Menu:Advisers', 'Treasury adviser'], ['Menu:Statistics', 'Since you took office'], ['Menu:Your party', 'Avg loyalty'], ['Menu:Regions', 'Dev. gap'], ['Menu:People', 'Voting blocs'], ['Menu:Climate', 'Climate hazard'], ['Menu:Media', 'Scandal heat'], ['Home', 'Advance to']]) {
     if (label.startsWith('Menu:')) {
       await page.locator('.nav button', { hasText: 'Menu' }).click();
       await page.locator('.menu-card .mc-main', { hasText: label.slice(5) }).first().click();
     } else await page.locator('.nav button', { hasText: label }).click();
     must(await page.getByText(check).first().isVisible(), `screen ${label} renders (${check})`);
-    if (/People|Climate|Media|Your party/.test(label)) await shot('soc-' + label.slice(5).toLowerCase());
+    if (/People|Climate|Media|Your party|Regions/.test(label)) await shot('soc-' + label.slice(5).toLowerCase());
   }
   // back link returns to the menu and the pinned row works
   await page.locator('.nav button', { hasText: 'Menu' }).click();
