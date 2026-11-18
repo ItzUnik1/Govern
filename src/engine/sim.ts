@@ -5,6 +5,7 @@ import { initEco, stepEco, ecoMetrics } from './economy';
 import { projectCostPct, stepProjects } from './projects';
 import { initAI, stepRivalAI } from './rivalai';
 import { initNews, stepNews } from './news';
+import { initFactions } from './factions';
 import { initSociety, runSocAction, socAgeFactor, socCostPct, socRevenuePct, stepSociety } from './society';
 import { influence, initDiplo, orgCostPct, stepDiplomacy } from './diplomacy';
 import { initResearch, researchCostPct, stepResearch } from './research';
@@ -70,7 +71,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
     monthsInOffice: 0, monthsToElection: c.monthsToElection0, term: 1, electionsWon: 0, brakeBreachMonths: 0,
     modifiers: [], cooldowns: {}, eventCounts: {}, flags: {}, pendingEvent: null, lastEventOutcome: null, lastElection: null, gameOver: null,
     history: [], lastReport: null, reports: [], eventHistory: [], electionHistory: [],
-    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(), soc: initSociety({ countryId, turn: 0 }, c),
+    eco: initEco(c), projects: [], pol: null as unknown as GameState['pol'], dip: initDiplo(countryId), ai: null as unknown as GameState['ai'], news: null as unknown as GameState['news'], res: initResearch(), soc: initSociety({ countryId, turn: 0 }, c), fac: null as unknown as GameState['fac'],
   };
   // Starting national conditions: >1 means a worse inheritance (more debt, inflation, joblessness; weaker approval and confidence).
   { const k = difficulty.start - 1;
@@ -79,6 +80,7 @@ export function newGame(countryId: string, difficulty: Difficulty, seed = Math.f
   s.pol = initPolitics(s, partyId, () => rngNext(s));
   s.ai = initAI(s);
   s.news = initNews(s);
+  { let a = (seed ^ 0x9e3779b9) | 0; s.fac = initFactions(s, () => { a = (a + 0x6d2b79f5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }); }
   s.dip.influence = influence(s);
   s.prevPolicy = policyVector(s);
   const f = fiscal(s);

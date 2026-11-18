@@ -9,6 +9,7 @@ export const MENU: Group[] = [
   { title: 'Politics', items: [
     { id: 'parliament', ico: '🏛️', title: 'Parliament', desc: 'Seats, coalition, votes', tab: 'politics', sub: 'parliament' },
     { id: 'laws', ico: '📜', title: 'Laws & bills', desc: 'Propose and whip votes', tab: 'politics', sub: 'laws' },
+    { id: 'party', ico: '🧑‍🤝‍🧑', title: 'Your party', desc: 'Factions, loyalty, whips', tab: 'politics', sub: 'party' },
     { id: 'cabinet', ico: '👔', title: 'Cabinet', desc: 'Ministers and reshuffles', tab: 'politics', sub: 'cabinet' },
     { id: 'parties', ico: '🏳️', title: 'Parties', desc: 'Polls and positions', tab: 'politics', sub: 'parties' },
     { id: 'elections', ico: '🗳️', title: 'Elections', desc: 'Forecast, campaign, history', tab: 'politics', sub: 'elections' },

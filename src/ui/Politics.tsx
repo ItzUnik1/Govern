@@ -9,8 +9,10 @@ import { LineChart, series } from './charts';
 import { Bar, Card, Seg, Stat, fmtPct, stability_label, toneFor } from './common';
 import type { Ctx } from './ctx';
 import type { GameState } from '../engine/types';
+import PartyRoom from './PartyRoom';
+import { whipBill } from '../engine/factions';
 
-type SegId = 'parliament' | 'laws' | 'cabinet' | 'opposition' | 'parties' | 'elections' | 'legacy';
+type SegId = 'parliament' | 'party' | 'laws' | 'cabinet' | 'opposition' | 'parties' | 'elections' | 'legacy';
 
 export function SeatBar({ s, seats }: { s: GameState; seats?: Record<string, number> }) {
   const sy = sysOf(s);
@@ -37,13 +39,14 @@ export default function Politics(ctx: Ctx) {
   const inGov = s.pol.inGovernment;
   const [seg, setSeg] = useState<SegId>((ctx.sub as SegId) || 'parliament');
   const opts: [SegId, string][] = inGov
-    ? [['parliament', 'Parliament'], ['laws', 'Laws'], ['cabinet', 'Cabinet'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']]
+    ? [['parliament', 'Parliament'], ['party', 'Party'], ['laws', 'Laws'], ['cabinet', 'Cabinet'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']]
     : [['parliament', 'Parliament'], ['opposition', 'Opposition'], ['parties', 'Parties'], ['elections', 'Elections'], ['legacy', 'Legacy']];
   const cur = opts.some((o) => o[0] === seg) ? seg : 'parliament';
   return (
     <>
       <div className="chips">{opts.map(([id, l]) => <button key={id} className={cur === id ? 'on' : ''} onClick={() => setSeg(id)}>{l}</button>)}</div>
       {cur === 'parliament' && <Parliament {...ctx} />}
+      {cur === 'party' && <PartyRoom {...ctx} />}
       {cur === 'laws' && <Laws {...ctx} />}
       {cur === 'cabinet' && <Cabinet {...ctx} />}
       {cur === 'opposition' && <Opposition {...ctx} />}
@@ -143,6 +146,7 @@ function Laws({ s, update, toast }: Ctx) {
         </Card>
         <div className="row">
           <button className="btn sec small" style={{ flex: 1 }} disabled={P.bill!.lobbied} onClick={() => update((g) => { const r = lobbyBill(g); if (r) toast(r); else toast('You lobby wavering MPs (-1.5 approval).'); })}>{P.bill!.lobbied ? 'Lobbied' : 'Lobby (−1.5 approval)'}</button>
+          {s.fac && s.pol.pmParty === s.pol.playerParty && <button className="btn sec small" style={{ flex: 1 }} disabled={s.fac.whipTurn === P.bill!.turn} onClick={() => update((g) => { const r = whipBill(g); toast(r ?? 'Whips are out for the vote.'); })}>{s.fac.whipTurn === P.bill!.turn ? 'Whipped' : 'Whip (10 capital)'}</button>}
           <button className="btn sec small" style={{ flex: 1 }} onClick={() => update((g) => withdrawBill(g))}>Withdraw</button>
         </div>
         <button className="btn" onClick={() => update((g) => { const r = voteBill(g); toast(r.text); })}>Call the vote</button>

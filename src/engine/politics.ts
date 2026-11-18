@@ -3,6 +3,7 @@
 import { COUNTRIES } from './countries';
 import { getBill, getPromise, BILLS, PROMISES } from './laws';
 import { POSTS, SYSTEMS, type PartyDef, type SystemDef } from './parties';
+import { initFactions, partyYes, rebelShare, stepFactions } from './factions';
 import type { GameState, Minister, PartyState, PoliticsState, RegionResult } from './types';
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
@@ -354,6 +355,11 @@ export function billSupport(s: GameState, billId: string, lobby = false): { part
     else z -= 0.5;
     if (!inGov && lobby) z += 0.6;
     if (inGov && p.id === P.pmParty) z -= 0.012 * Math.max(0, 40 - s.approval);
+    if (p.id === P.pmParty) {
+      // your own party votes wing by wing: each faction compares the bill with its own position and its loyalty
+      const py = partyYes(s, (eo, so) => z + 1.1 * Math.abs(b.econ - p.econ) + 0.9 * Math.abs(b.social - p.social) - 1.1 * Math.abs(b.econ - (p.econ + eo)) - 0.9 * Math.abs(b.social - (p.social + so)));
+      if (py !== null) return { party: p.id, yes: py, seats };
+    }
     return { party: p.id, yes: sigmoid(2.2 * z), seats };
   });
 }
@@ -374,6 +380,7 @@ export function ncRisk(s: GameState): number {
   for (const id of P.coalition) if (id !== P.pmParty) r += 0.03 * Math.max(0, 35 - (P.parties[id]?.sat ?? 50)) / 35;
   if (P.minority) r += 0.012;
   r += 0.006 * Math.max(0, s.ai?.opp.momentum ?? 0);
+  r += 0.06 * rebelShare(s);
   return clamp(r * s.difficulty.stability, 0, 0.25);
 }
 export function confidenceVote(s: GameState, rnd: () => number): { won: boolean; yes: number; no: number } {
@@ -382,7 +389,7 @@ export function confidenceVote(s: GameState, rnd: () => number): { won: boolean;
   for (const p of sy.parties) {
     const seats = P.parties[p.id]?.seats ?? 0; if (!seats) continue;
     if (P.coalition.includes(p.id)) {
-      const defect = p.id === P.pmParty ? clamp((30 - s.approval) / 120, 0, 0.25) : sigmoid((35 - (P.parties[p.id].sat)) / 8);
+      const defect = p.id === P.pmParty ? clamp((30 - s.approval) / 120 + 0.6 * rebelShare(s), 0, 0.5) : sigmoid((35 - (P.parties[p.id].sat)) / 8);
       const d = clamp(defect + 0.03 * normal(rnd), 0, 1);
       yes += seats * (1 - d); no += seats * d;
     } else if (P.minority && dist(pdef(sy, P.pmParty), p) < 0.7) { yes += seats * 0.5; no += seats * 0.1; }
@@ -456,6 +463,7 @@ export function monthlyPolitics(s: GameState, rnd: () => number, notes: string[]
     const st = P.parties[id];
     st.sat = clamp(st.sat + 0.5 * align - 0.3 + 0.02 * (s.approval - 40) + 0.3 * normal(rnd), 0, 100);
   }
+  stepFactions(s, rnd, notes, tilt);
   // ministers: reputation is revealed gradually, competence slowly matters
   for (const id of Object.keys(P.cabinet)) {
     const m = P.cabinet[id]; if (!m) continue;
